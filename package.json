@@ -33,6 +33,7 @@
   },
   "homepage": "https://github.com/j-ble/TradingBot#readme",
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.38.6",
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.2",

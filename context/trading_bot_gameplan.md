@@ -1,4 +1,4 @@
-# BTC Futures Trading Bot - Complete Gameplan
+# BTC Spot Trading Bot - Complete Gameplan
 
 **Project Start Date**: November 17, 2025  
 **Status**: Planning Phase  
@@ -24,10 +24,10 @@
 ## Project Overview
 
 ### Mission Statement
-Build an autonomous trading bot that trades BTC futures on Coinbase using AI-powered technical analysis based on liquidity sweeps, market structure, and fair value gaps.
+Build an autonomous trading bot that trades BTC Spot on Coinbase using AI-powered technical analysis based on liquidity sweeps, market structure, and fair value gaps.
 
 ### Key Decisions Made
-- ✅ **Platform**: Coinbase Advanced Trade API (Futures & Derivatives)
+- ✅ **Platform**: Coinbase Advanced Trade API (Spots)
 - ✅ **Blockchain**: No L2 smart contracts needed
 - ✅ **Instrument**: BTC-USD Spots
 - ✅ **Position Sizing**: Fixed 1% of account per trade
@@ -51,7 +51,7 @@ Build an autonomous trading bot that trades BTC futures on Coinbase using AI-pow
 ```
 ┌──────────────────────────────────────────────────────┐
 │             DATA COLLECTION (Continuous)              │
-│  • Coinbase API: 4H + 5M BTC futures candles         │
+│  • Coinbase API: 4H + 5M BTC-USD Spot candles         │
 │  • Store in PostgreSQL                                │
 └─────────────────────┬────────────────────────────────┘
                       │
@@ -451,7 +451,7 @@ python -m vllm.entrypoints.api_server \
 
 **System Prompt Template**:
 ```
-You are an expert BTC futures trader following a strict rule-based system.
+You are an expert BTC Spot trader following a strict rule-based system.
 
 === ENTRY RULES ===
 You may ONLY enter a trade when ALL conditions are met IN ORDER:
@@ -635,7 +635,7 @@ Step 2: Verify position size
     ABORT TRADE
   ↓
 Step 3: Calculate contract quantity
-  // BTC futures use contracts, not USD
+  // BTC Spots use contracts, not USD
   btc_price = current_price
   contracts = position_size_usd / btc_price
   ↓
@@ -1214,7 +1214,7 @@ LIMIT 1;
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                  BTC FUTURES TRADING BOT                     │
+│                  BTC Spots TRADING BOT                     │
 │                     Live Dashboard                           │
 └──────────────────────────────────────────────────────────────┘
 
