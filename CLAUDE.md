@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an **autonomous AI-powered BTC futures trading bot** for Coinbase Advanced Trade API. The system trades BTC perpetual futures using AI-driven technical analysis based on liquidity sweeps, market structure (CHoCH, FVG, BOS), and strict risk management.
+This is an **autonomous AI-powered BTC futures trading bot** for Coinbase Advanced Trade API. The system trades BTC-USD Spots using AI-driven technical analysis based on liquidity sweeps, market structure (CHoCH, FVG, BOS), and strict risk management.
 
 **Primary Goal**: Achieve and maintain 90% win rate over 100+ trades
 **Risk Model**: Fixed 1% risk per trade
@@ -161,15 +161,33 @@ The AI prompt MUST include:
 
 ## Coinbase API Integration
 
+**Base URL**: `https://api.coinbase.com`
+
+**Authentication**: JWT Bearer token signed with CDP API Key Secret
+```
+Authorization: Bearer <jwt_token>
+```
+
 ### REST Endpoints
-- `GET /api/v3/brokerage/products/BTC-PERP/candles` - Historical data
-- `GET /api/v3/brokerage/accounts` - Account balance
-- `POST /api/v3/brokerage/orders` - Place orders
-- `GET /api/v3/brokerage/orders/{id}` - Order status
-- `DELETE /api/v3/brokerage/orders/{id}` - Cancel order
+
+*Market Data*:
+- `GET /api/v3/brokerage/products/{product_id}/candles` - Historical data (granularity: FIVE_MINUTE, FOUR_HOUR)
+- `GET /api/v3/brokerage/best_bid_ask` - Best bid/ask prices
+- `GET /api/v3/brokerage/products/{product_id}/ticker` - Recent market trades
+
+*Account*:
+- `GET /api/v3/brokerage/accounts` - List all accounts
+- `GET /api/v3/brokerage/accounts/{account_uuid}` - Get account balance
+
+*Orders*:
+- `POST /api/v3/brokerage/orders` - Create order (market, limit, stop-limit)
+- `GET /api/v3/brokerage/orders/historical/{order_id}` - Order status
+- `GET /api/v3/brokerage/orders/historical/batch` - List orders
+- `POST /api/v3/brokerage/orders/batch_cancel` - Cancel orders
+- `POST /api/v3/brokerage/orders/close_position` - Close position
 
 ### WebSocket
-- Channel: `ticker` on `BTC-PERP` for real-time prices
+- Channel: `ticker` on `BTC-USD` for real-time prices
 
 ### Order Execution Flow
 1. Place market order (LONG/SHORT)

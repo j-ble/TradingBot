@@ -29,7 +29,7 @@ Build an autonomous trading bot that trades BTC futures on Coinbase using AI-pow
 ### Key Decisions Made
 - ✅ **Platform**: Coinbase Advanced Trade API (Futures & Derivatives)
 - ✅ **Blockchain**: No L2 smart contracts needed
-- ✅ **Instrument**: BTC Perpetual Futures
+- ✅ **Instrument**: BTC-USD Spots
 - ✅ **Position Sizing**: Fixed 1% of account per trade
 - ✅ **Database**: PostgreSQL
 - ✅ **AI Model**: GPT-OSS 20B (hosted locally on Mac Mini)
@@ -161,11 +161,11 @@ Build an autonomous trading bot that trades BTC futures on Coinbase using AI-pow
 Trigger: Schedule (*/5 * * * *)
   ↓
 Action 1: Fetch 4H candles from Coinbase
-  GET /api/v3/brokerage/products/BTC-PERP/candles
+  GET /api/v3/brokerage/products/BTC-USD/candles
   { granularity: "FOUR_HOUR", limit: 50 }
   ↓
 Action 2: Fetch 5M candles from Coinbase
-  GET /api/v3/brokerage/products/BTC-PERP/candles
+  GET /api/v3/brokerage/products/BTC-USD/candles
   { granularity: "FIVE_MINUTE", limit: 100 }
   ↓
 Action 3: Store in PostgreSQL
@@ -508,7 +508,7 @@ You may ONLY enter a trade when ALL conditions are met IN ORDER:
 - Primary Timeframe: 4H for bias
 - Execution Timeframe: 5M for entry
 - Trading Session: 24/7 (crypto markets)
-- Asset: BTC Perpetual Futures
+- Asset: BTC-USD Spots
 
 ===========================
 
@@ -643,7 +643,7 @@ Step 4: Place MARKET order
   POST /api/v3/brokerage/orders
   {
     "client_order_id": "bot_entry_{timestamp}",
-    "product_id": "BTC-PERP",
+    "product_id": "BTC-USD",
     "side": "BUY" (for LONG) or "SELL" (for SHORT),
     "order_configuration": {
       "market_market_ioc": {
@@ -662,7 +662,7 @@ Step 5: Immediately place STOP LOSS order
   POST /api/v3/brokerage/orders
   {
     "client_order_id": "bot_stop_{timestamp}",
-    "product_id": "BTC-PERP",
+    "product_id": "BTC-USD",
     "side": "SELL" (if LONG) or "BUY" (if SHORT),
     "order_configuration": {
       "stop_limit_stop_limit": {
@@ -680,7 +680,7 @@ Step 6: Place TAKE PROFIT order
   POST /api/v3/brokerage/orders
   {
     "client_order_id": "bot_tp_{timestamp}",
-    "product_id": "BTC-PERP",
+    "product_id": "BTC-USD",
     "side": "SELL" (if LONG) or "BUY" (if SHORT),
     "order_configuration": {
       "limit_limit_gtc": {
@@ -732,7 +732,7 @@ Action 1: Query all open positions from PostgreSQL
 Action 2: For each open position:
   ↓
   Get current price from Coinbase WebSocket or API
-    current_price = getCoinbasePrice('BTC-PERP')
+    current_price = getCoinbasePrice('BTC-USD')
   ↓
   Calculate unrealized P&L:
     IF direction == 'LONG':
@@ -780,7 +780,7 @@ Action 2: For each open position:
       Place new stop order:
         POST /api/v3/brokerage/orders
         {
-          "product_id": "BTC-PERP",
+          "product_id": "BTC-USD",
           "side": opposite_side,
           "order_configuration": {
             "stop_limit_stop_limit": {

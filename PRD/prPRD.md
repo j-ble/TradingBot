@@ -77,24 +77,27 @@ Create a robust Coinbase Advanced Trade API client with authentication, error ha
 **API Methods to Implement**:
 ```javascript
 // Market Data
-getCandles(productId, granularity, start, end)
-getCurrentPrice(productId)
+getCandles(productId, start, end, granularity) // granularity: FIVE_MINUTE, FOUR_HOUR
+getBestBidAsk(productIds)
+getMarketTrades(productId, limit)
 
 // Account
-getAccounts()
-getAccountBalance()
+listAccounts()
+getAccount(accountUuid)
 
 // Orders
-placeMarketOrder(productId, side, size)
-placeStopLossOrder(productId, side, size, stopPrice)
-placeTakeProfitOrder(productId, side, size, limitPrice)
+createOrder(productId, side, orderConfiguration)
 getOrder(orderId)
-cancelOrder(orderId)
-listOrders(productId, status)
+listOrders(filters) // filters: product_ids, order_status, start_date, end_date
+cancelOrders(orderIds)
+closePosition(productId, size)
+previewOrder(productId, side, orderConfiguration)
 ```
 
+**Base URL**: `https://api.coinbase.com`
+
 **Features**:
-- API key authentication with signature generation
+- JWT Bearer token authentication (CDP API Key Secret)
 - Rate limiting (10 requests/second)
 - Automatic retry with exponential backoff
 - Request/response logging
@@ -103,14 +106,14 @@ listOrders(productId, status)
 
 **Testing Requirements**:
 - Mock API responses for all methods
-- Test authentication signature generation
+- Test JWT token generation and signing
 - Test rate limiting behavior
 - Test retry logic on failures
 - Integration test with Coinbase sandbox
 
 **Acceptance Criteria**:
 - [ ] All API methods implemented
-- [ ] Authentication working with API keys
+- [ ] JWT authentication working with CDP API keys
 - [ ] Rate limiting prevents exceeding limits
 - [ ] Retry logic handles transient failures
 - [ ] Comprehensive error handling
@@ -339,7 +342,7 @@ WHERE timestamp < NOW() - INTERVAL '7 days'
 **Size**: Medium | **Priority**: P1 | **Dependencies**: PR#2
 
 **Description**:
-Implement WebSocket connection for real-time BTC-PERP price updates.
+Implement WebSocket connection for real-time BTC-USD price updates.
 
 **Files to Create**:
 - `lib/coinbase/websocket.js` - WebSocket client
@@ -348,7 +351,7 @@ Implement WebSocket connection for real-time BTC-PERP price updates.
 - `tests/integration/websocket.test.js` - Integration tests
 
 **Features**:
-- Subscribe to BTC-PERP ticker channel
+- Subscribe to BTC-USD ticker channel
 - Real-time price updates
 - Automatic reconnection on disconnect
 - Heartbeat monitoring (detect stale connections)
@@ -363,7 +366,7 @@ Implement WebSocket connection for real-time BTC-PERP price updates.
   "channels": [
     {
       "name": "ticker",
-      "product_ids": ["BTC-PERP"]
+      "product_ids": ["BTC-USD"]
     }
   ]
 }
@@ -371,7 +374,7 @@ Implement WebSocket connection for real-time BTC-PERP price updates.
 // Price update
 {
   "type": "ticker",
-  "product_id": "BTC-PERP",
+  "product_id": "BTC-USD",
   "price": "90123.45",
   "time": "2024-01-01T12:00:00Z"
 }
@@ -1084,7 +1087,7 @@ async function executeTrade(tradeDecision) {
 
     // 2. Place market entry order
     const entryOrder = await placeMarketOrder({
-      productId: 'BTC-PERP',
+      productId: 'BTC-USD',
       side: tradeDecision.direction === 'LONG' ? 'BUY' : 'SELL',
       size: tradeDecision.position_size_btc
     })
@@ -1094,7 +1097,7 @@ async function executeTrade(tradeDecision) {
 
     // 4. Place stop loss order
     const stopOrder = await placeStopLossOrder({
-      productId: 'BTC-PERP',
+      productId: 'BTC-USD',
       side: tradeDecision.direction === 'LONG' ? 'SELL' : 'BUY',
       size: tradeDecision.position_size_btc,
       stopPrice: tradeDecision.stop_loss
@@ -1102,7 +1105,7 @@ async function executeTrade(tradeDecision) {
 
     // 5. Place take profit order
     const tpOrder = await placeTakeProfitOrder({
-      productId: 'BTC-PERP',
+      productId: 'BTC-USD',
       side: tradeDecision.direction === 'LONG' ? 'SELL' : 'BUY',
       size: tradeDecision.position_size_btc,
       limitPrice: tradeDecision.take_profit
@@ -1133,7 +1136,7 @@ async function executeTrade(tradeDecision) {
 **Pre-Execution Validation**:
 ```javascript
 async function validateExecution(decision) {
-  const currentPrice = await getCurrentPrice('BTC-PERP')
+  const currentPrice = await getCurrentPrice('BTC-USD')
 
   const checks = {
     // Price within 0.2% of expected entry
@@ -1183,7 +1186,7 @@ async function monitorPosition(tradeId) {
   }
 
   // Update P&L
-  const currentPrice = await getCurrentPrice('BTC-PERP')
+  const currentPrice = await getCurrentPrice('BTC-USD')
   await updateTradeMetrics(tradeId, currentPrice)
 }
 ```
@@ -1662,7 +1665,7 @@ export function PositionCard({ position }) {
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>
-            {position.direction} BTC-PERP
+            {position.direction} BTC-USD
           </CardTitle>
           <Badge variant={position.direction === 'LONG' ? 'success' : 'destructive'}>
             {position.direction}
@@ -1775,7 +1778,7 @@ export function TradingChart({ timeframe = '5M' }) {
     <Card className="col-span-full">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>BTC-PERP Chart</CardTitle>
+          <CardTitle>BTC-USD Chart</CardTitle>
           <TimeframeSelector
             value={timeframe}
             options={['5M', '4H']}
@@ -2207,7 +2210,7 @@ Implement trailing stop loss to lock in profits as trade moves in favor.
 **Trailing Stop Logic**:
 ```javascript
 async function checkTrailingStop(trade) {
-  const currentPrice = await getCurrentPrice('BTC-PERP')
+  const currentPrice = await getCurrentPrice('BTC-USD')
 
   // Activate when 80% to target
   const targetDistance = Math.abs(trade.take_profit - trade.entry_price)

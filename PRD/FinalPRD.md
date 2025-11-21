@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-Build a production-ready autonomous trading bot for BTC perpetual futures on Coinbase using AI-powered technical analysis based on liquidity sweeps and market structure.
+Build a production-ready autonomous trading bot for BTC-USD Spots on Coinbase using AI-powered technical analysis based on liquidity sweeps and market structure.
 
 **Core System**:
 - Detect 4H liquidity sweeps (highs/lows)
@@ -86,7 +86,7 @@ Build a production-ready autonomous trading bot for BTC perpetual futures on Coi
 │              DATA COLLECTION LAYER                  │
 │  • 4H candles (every 4 hours)                      │
 │  • 5M candles (every 5 minutes)                    │
-│  • WebSocket: Real-time BTC-PERP price            │
+│  • WebSocket: Real-time BTC-USD price            │
 └─────────────────┬──────────────────────────────────┘
                   ↓
 ┌────────────────────────────────────────────────────┐
@@ -423,17 +423,39 @@ positionSize = riskAmount / stopDistance
 }
 ```
 
-### Coinbase API Endpoints
+### Coinbase API Integration
 
-**REST API**:
-- `GET /api/v3/brokerage/products/BTC-PERP/candles` - Candle data
-- `GET /api/v3/brokerage/accounts` - Account balance
-- `POST /api/v3/brokerage/orders` - Place orders
-- `GET /api/v3/brokerage/orders/{id}` - Order status
-- `DELETE /api/v3/brokerage/orders/{id}` - Cancel order
+**Base URL**: `https://api.coinbase.com`
+
+**Authentication**: JWT Bearer token signed with CDP API Key Secret (base64 encoded)
+```
+Authorization: Bearer <jwt_token>
+```
+
+**REST API Endpoints**:
+
+*Market Data*:
+- `GET /api/v3/brokerage/products/{product_id}/candles` - Candle data
+  - Parameters: `start`, `end` (UNIX timestamps), `granularity` (FIVE_MINUTE, FOUR_HOUR), `limit` (max 350)
+- `GET /api/v3/brokerage/best_bid_ask` - Best bid/ask prices
+- `GET /api/v3/brokerage/products/{product_id}/ticker` - Recent market trades
+
+*Account*:
+- `GET /api/v3/brokerage/accounts` - List all accounts
+- `GET /api/v3/brokerage/accounts/{account_uuid}` - Get account balance
+
+*Orders*:
+- `POST /api/v3/brokerage/orders` - Create order (market, limit, stop-limit)
+- `GET /api/v3/brokerage/orders/historical/{order_id}` - Get order status
+- `GET /api/v3/brokerage/orders/historical/batch` - List orders with filters
+- `POST /api/v3/brokerage/orders/batch_cancel` - Cancel orders
+- `POST /api/v3/brokerage/orders/close_position` - Close position
+- `POST /api/v3/brokerage/orders/preview` - Preview order before execution
+
+*Order Types*: `market_market_ioc`, `limit_limit_gtc`, `stop_limit_stop_limit_gtc`
 
 **WebSocket**:
-- Channel: `ticker` on `BTC-PERP`
+- Channel: `ticker` on `BTC-USD`
 - Real-time price updates
 
 ---
