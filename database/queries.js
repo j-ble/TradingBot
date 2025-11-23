@@ -99,7 +99,6 @@ export async function prune5MCandles() {
   const text = `
     DELETE FROM candles_5m
     WHERE timestamp < NOW() - INTERVAL '7 days'
-    RETURNING COUNT(*) as deleted_count
   `;
 
   try {
