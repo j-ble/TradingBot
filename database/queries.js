@@ -335,6 +335,94 @@ export async function getActiveConfluence() {
   }
 }
 
+/**
+ * Get confluence state by ID
+ */
+export async function getConfluenceState(id) {
+  const text = `
+    SELECT cs.*, ls.bias, ls.sweep_type, ls.price as sweep_price, ls.swing_level
+    FROM confluence_state cs
+    JOIN liquidity_sweeps ls ON ls.id = cs.sweep_id
+    WHERE cs.id = $1
+  `;
+
+  try {
+    const result = await query(text, [id]);
+    return result.rows[0];
+  } catch (error) {
+    logger.error('Failed to get confluence state', { error: error.message, id });
+    throw error;
+  }
+}
+
+/**
+ * Get all active (incomplete) confluence states
+ */
+export async function getActiveConfluenceStates() {
+  const text = `
+    SELECT cs.*, ls.bias, ls.sweep_type, ls.price as sweep_price
+    FROM confluence_state cs
+    JOIN liquidity_sweeps ls ON ls.id = cs.sweep_id
+    WHERE cs.current_state NOT IN ('COMPLETE', 'EXPIRED')
+    ORDER BY cs.created_at DESC
+  `;
+
+  try {
+    const result = await query(text);
+    return result.rows;
+  } catch (error) {
+    logger.error('Failed to get active confluence states', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Expire confluence state (timeout after 12 hours)
+ */
+export async function expireConfluenceState(id) {
+  const text = `
+    UPDATE confluence_state
+    SET current_state = 'EXPIRED',
+        sequence_valid = false,
+        expired_at = NOW(),
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING *
+  `;
+
+  try {
+    const result = await query(text, [id]);
+    logger.info(`Confluence state ${id} expired`);
+    return result.rows[0];
+  } catch (error) {
+    logger.error('Failed to expire confluence state', { error: error.message, id });
+    throw error;
+  }
+}
+
+/**
+ * Complete confluence state
+ */
+export async function completeConfluenceState(id) {
+  const text = `
+    UPDATE confluence_state
+    SET current_state = 'COMPLETE',
+        completed_at = NOW(),
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING *
+  `;
+
+  try {
+    const result = await query(text, [id]);
+    logger.info(`Confluence state ${id} completed`);
+    return result.rows[0];
+  } catch (error) {
+    logger.error('Failed to complete confluence state', { error: error.message, id });
+    throw error;
+  }
+}
+
 // ============================================================================
 // Trades
 // ============================================================================
@@ -640,6 +728,10 @@ export default {
   createConfluenceState,
   updateConfluenceState,
   getActiveConfluence,
+  getConfluenceState,
+  getActiveConfluenceStates,
+  expireConfluenceState,
+  completeConfluenceState,
 
   // Trades
   insertTrade,
