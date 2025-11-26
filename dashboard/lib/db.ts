@@ -4,7 +4,7 @@
  * Manages PostgreSQL connection pool for the dashboard
  */
 
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
 // Database configuration from environment variables
 const dbConfig = {
@@ -49,7 +49,7 @@ export function getPool(): Pool {
  * @param params - Query parameters
  * @returns Query result
  */
-export async function query<T = any>(
+export async function query<T extends QueryResultRow = any>(
   text: string,
   params?: any[]
 ): Promise<QueryResult<T>> {

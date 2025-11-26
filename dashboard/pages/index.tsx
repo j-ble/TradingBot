@@ -11,6 +11,7 @@ import SystemStatus from '../components/SystemStatus';
 import AccountStats from '../components/AccountStats';
 import PositionCard from '../components/PositionCard';
 import EmergencyStop from '../components/EmergencyStop';
+import TradingChart from '../components/TradingChart';
 import type { SystemStatus as SystemStatusType } from './api/status';
 import type { Position } from './api/positions';
 import type { AccountStats as AccountStatsType } from './api/account';
@@ -94,11 +95,10 @@ export default function Dashboard() {
 
           {/* Emergency Message */}
           {emergencyMessage && (
-            <div className={`mb-6 p-4 rounded-lg ${
-              emergencyMessage.startsWith('✓')
-                ? 'bg-success-500/10 border border-success-500 text-success-500'
-                : 'bg-danger-500/10 border border-danger-500 text-danger-500'
-            }`}>
+            <div className={`mb-6 p-4 rounded-lg ${emergencyMessage.startsWith('✓')
+              ? 'bg-success-500/10 border border-success-500 text-success-500'
+              : 'bg-danger-500/10 border border-danger-500 text-danger-500'
+              }`}>
               <p className="font-semibold">{emergencyMessage}</p>
             </div>
           )}
@@ -115,6 +115,11 @@ export default function Dashboard() {
               isLoading={!accountStats && !accountError}
               error={accountError?.message || null}
             />
+          </div>
+
+          {/* Trading Chart Section */}
+          <div className="mb-6">
+            <TradingChart positions={positions || []} />
           </div>
 
           {/* Open Positions Section */}
@@ -172,11 +177,10 @@ export default function Dashboard() {
           <div className="mb-6">
             <button
               onClick={() => setShowEmergencyStop(!showEmergencyStop)}
-              className={`w-full mb-4 px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
-                showEmergencyStop
-                  ? 'bg-gray-700 text-gray-300'
-                  : 'bg-danger-600 hover:bg-danger-700 text-white'
-              }`}
+              className={`w-full mb-4 px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${showEmergencyStop
+                ? 'bg-gray-700 text-gray-300'
+                : 'bg-danger-600 hover:bg-danger-700 text-white'
+                }`}
             >
               {showEmergencyStop ? 'Hide Emergency Stop' : 'Show Emergency Stop Controls'}
             </button>
