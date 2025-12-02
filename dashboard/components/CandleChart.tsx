@@ -1,6 +1,6 @@
 /**
  * Candlestick Chart Component
- * 
+ *
  * Renders candlestick chart using Recharts
  * Custom rendering for OHLC data with color coding
  */
@@ -13,6 +13,7 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
+    Customized,
     Bar,
 } from 'recharts';
 import type { Candle } from '../pages/api/candles/[timeframe]';
@@ -22,46 +23,68 @@ interface CandleChartProps {
     children?: React.ReactNode;
 }
 
-// Custom candlestick shape
-const CandleStick = (props: any) => {
-    const { x, y, width, height, payload } = props;
+// Custom candlestick renderer using Customized component for proper coordinate transformation
+const CandlestickLayer = (props: any) => {
+    const { xAxisMap, yAxisMap, offset, chartData } = props;
 
-    if (!payload) return null;
+    if (!xAxisMap || !yAxisMap || !chartData || chartData.length === 0) return null;
 
-    const { open, close, high, low } = payload;
-    const isGreen = close > open;
-    const color = isGreen ? '#22c55e' : '#ef4444';
+    const xScale = xAxisMap[0]?.scale;
+    const yScale = yAxisMap[0]?.scale;
 
-    // Calculate positions
-    const candleWidth = Math.max(width * 0.6, 2);
-    const centerX = x + width / 2;
-
-    // Body dimensions
-    const bodyTop = Math.min(open, close);
-    const bodyHeight = Math.abs(close - open);
+    if (!xScale || !yScale) return null;
 
     return (
-        <g>
-            {/* Wick (high to low) */}
-            <line
-                x1={centerX}
-                y1={high}
-                x2={centerX}
-                y2={low}
-                stroke={color}
-                strokeWidth={1}
-            />
+        <g className="candlestick-layer">
+            {chartData.map((candle: any, index: number) => {
+                const { open, close, high, low, timestamp } = candle;
 
-            {/* Body (open to close) */}
-            <rect
-                x={centerX - candleWidth / 2}
-                y={bodyTop}
-                width={candleWidth}
-                height={Math.max(bodyHeight, 1)}
-                fill={color}
-                stroke={color}
-                strokeWidth={1}
-            />
+                // Transform data values to pixel coordinates using yScale
+                const highY = yScale(high);
+                const lowY = yScale(low);
+                const openY = yScale(open);
+                const closeY = yScale(close);
+                const x = xScale(timestamp);
+
+                // Calculate candle width (based on chart width and data density)
+                const candleWidth = Math.min(
+                    offset.width / chartData.length * 0.6,
+                    20
+                );
+
+                // Determine color
+                const isGreen = close > open;
+                const color = isGreen ? '#22c55e' : '#ef4444';
+
+                // Body dimensions (min/max for SVG top-down coordinates)
+                const bodyTop = Math.min(openY, closeY);
+                const bodyHeight = Math.max(Math.abs(closeY - openY), 1);
+
+                return (
+                    <g key={`candle-${index}`}>
+                        {/* Wick: from high to low */}
+                        <line
+                            x1={x}
+                            y1={highY}
+                            x2={x}
+                            y2={lowY}
+                            stroke={color}
+                            strokeWidth={1}
+                        />
+
+                        {/* Body: from open to close */}
+                        <rect
+                            x={x - candleWidth / 2}
+                            y={bodyTop}
+                            width={candleWidth}
+                            height={bodyHeight}
+                            fill={color}
+                            stroke={color}
+                            strokeWidth={1}
+                        />
+                    </g>
+                );
+            })}
         </g>
     );
 };
@@ -71,6 +94,10 @@ const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload || !payload[0]) return null;
 
     const data = payload[0].payload;
+
+    // Validate candle data exists
+    if (!data.open || !data.high || !data.low || !data.close) return null;
+
     const isGreen = data.close > data.open;
 
     return (
@@ -104,13 +131,20 @@ export default function CandleChart({ candles, children }: CandleChartProps) {
     const chartData = candles.map((candle) => ({
         ...candle,
         timestamp: new Date(candle.timestamp).getTime(),
-        high: candle.high,
-        low: candle.low,
     }));
+
+    // Calculate Y-axis domain from data for optimal viewport
+    const allPrices = candles.flatMap(c => [c.high, c.low]);
+    const minPrice = Math.min(...allPrices);
+    const maxPrice = Math.max(...allPrices);
+    const padding = (maxPrice - minPrice) * 0.12; // 12% padding for visual comfort and overlay space
 
     return (
         <ResponsiveContainer width="100%" height={500}>
-            <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <ComposedChart
+                data={chartData}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
 
                 <XAxis
@@ -126,7 +160,7 @@ export default function CandleChart({ candles, children }: CandleChartProps) {
                 />
 
                 <YAxis
-                    domain={['auto', 'auto']}
+                    domain={[minPrice - padding, maxPrice + padding]}
                     tickFormatter={(value) => `$${value.toLocaleString()}`}
                     stroke="#9ca3af"
                     style={{ fontSize: '12px' }}
@@ -134,12 +168,17 @@ export default function CandleChart({ candles, children }: CandleChartProps) {
 
                 <Tooltip content={<CustomTooltip />} />
 
-                {/* Candlesticks rendered as bars with custom shape */}
+                {/* Invisible Bar to establish coordinate system and enable tooltip */}
                 <Bar
-                    dataKey="high"
-                    shape={<CandleStick />}
+                    dataKey="close"
+                    fill="transparent"
+                    stroke="transparent"
                     isAnimationActive={false}
+                    style={{ pointerEvents: 'none' }}
                 />
+
+                {/* Candlesticks rendered using Customized component with proper coordinate transformation */}
+                <Customized component={<CandlestickLayer chartData={chartData} />} />
 
                 {/* Children for overlays (patterns, positions, etc.) */}
                 {children}

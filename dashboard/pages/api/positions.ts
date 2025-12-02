@@ -58,9 +58,9 @@ export default async function handler(
       position_size_btc: number;
       position_size_usd: number;
       stop_loss_source: '5M_SWING' | '4H_SWING';
-      trailing_stop_active: boolean;
-      opened_at: Date;
-      risk_amount: number;
+      trailing_stop_activated: boolean;
+      entry_time: Date;
+      stop_loss_distance_percent: number;
     }>(
       `SELECT
         id,
@@ -71,54 +71,65 @@ export default async function handler(
         position_size_btc,
         position_size_usd,
         stop_loss_source,
-        trailing_stop_active,
-        opened_at,
-        risk_amount
+        trailing_stop_activated,
+        entry_time,
+        stop_loss_distance_percent
       FROM trades
       WHERE status = 'OPEN'
-      ORDER BY opened_at DESC`
+      ORDER BY entry_time DESC`
     );
 
     // Calculate P&L for each position
     const positions: Position[] = positionsResult.rows.map((pos) => {
+      // Convert PostgreSQL numeric types to numbers
+      const entryPrice = parseFloat(pos.entry_price as any);
+      const stopLoss = parseFloat(pos.stop_loss as any);
+      const takeProfit = parseFloat(pos.take_profit as any);
+      const positionSizeBtc = parseFloat(pos.position_size_btc as any);
+      const positionSizeUsd = parseFloat(pos.position_size_usd as any);
+      const stopLossDistancePercent = parseFloat(pos.stop_loss_distance_percent as any);
+
       let unrealizedPnl: number;
       let unrealizedPnlPercent: number;
 
       if (pos.direction === 'LONG') {
         // LONG: profit if current > entry
-        unrealizedPnl = (currentPrice - pos.entry_price) * pos.position_size_btc;
-        unrealizedPnlPercent = ((currentPrice - pos.entry_price) / pos.entry_price) * 100;
+        unrealizedPnl = (currentPrice - entryPrice) * positionSizeBtc;
+        unrealizedPnlPercent = ((currentPrice - entryPrice) / entryPrice) * 100;
       } else {
         // SHORT: profit if current < entry
-        unrealizedPnl = (pos.entry_price - currentPrice) * pos.position_size_btc;
-        unrealizedPnlPercent = ((pos.entry_price - currentPrice) / pos.entry_price) * 100;
+        unrealizedPnl = (entryPrice - currentPrice) * positionSizeBtc;
+        unrealizedPnlPercent = ((entryPrice - currentPrice) / entryPrice) * 100;
       }
 
       // Calculate duration in minutes
-      const durationMs = Date.now() - new Date(pos.opened_at).getTime();
+      const durationMs = Date.now() - new Date(pos.entry_time).getTime();
       const durationMinutes = Math.floor(durationMs / 1000 / 60);
 
       // Calculate potential profit
       const potentialProfit = pos.direction === 'LONG'
-        ? (pos.take_profit - pos.entry_price) * pos.position_size_btc
-        : (pos.entry_price - pos.take_profit) * pos.position_size_btc;
+        ? (takeProfit - entryPrice) * positionSizeBtc
+        : (entryPrice - takeProfit) * positionSizeBtc;
+
+      // Calculate risk amount from position size and stop loss distance
+      const riskAmount = positionSizeUsd * (stopLossDistancePercent / 100);
 
       return {
         id: pos.id,
         direction: pos.direction,
-        entry_price: pos.entry_price,
+        entry_price: entryPrice,
         current_price: currentPrice,
-        stop_loss: pos.stop_loss,
-        take_profit: pos.take_profit,
-        position_size_btc: pos.position_size_btc,
-        position_size_usd: pos.position_size_usd,
+        stop_loss: stopLoss,
+        take_profit: takeProfit,
+        position_size_btc: positionSizeBtc,
+        position_size_usd: positionSizeUsd,
         unrealized_pnl: unrealizedPnl,
         unrealized_pnl_percent: unrealizedPnlPercent,
         stop_loss_source: pos.stop_loss_source,
-        trailing_stop_active: pos.trailing_stop_active,
-        opened_at: pos.opened_at.toISOString(),
+        trailing_stop_active: pos.trailing_stop_activated,
+        opened_at: pos.entry_time.toISOString(),
         duration_minutes: durationMinutes,
-        risk_amount: pos.risk_amount,
+        risk_amount: riskAmount,
         potential_profit: potentialProfit,
       };
     });
@@ -126,11 +137,10 @@ export default async function handler(
     return res.status(200).json(positions);
   } catch (error) {
     console.error('Error in positions endpoint:', error);
-
-    // Fallback to mock data if database connection fails
-    // This allows the dashboard to be viewed without a running database
-    console.log('Serving mock positions data due to database error');
-    const { MOCK_POSITIONS } = require('../../lib/mockData');
-    return res.status(200).json(MOCK_POSITIONS);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return res.status(500).json({
+      error: 'Database query failed',
+      message: errorMessage
+    } as any);
   }
 }

@@ -50,9 +50,10 @@ const AccountStats: React.FC<AccountStatsProps> = ({ stats, isLoading, error }) 
   };
 
   // Calculate win rate progress (goal: 90%)
-  const winRateProgress = Math.min(100, (stats.winRate / 90) * 100);
-  const winRateColor = stats.winRate >= 90 ? 'success' :
-                        stats.winRate >= 70 ? 'warning' : 'danger';
+  const safeWinRate = stats.winRate ?? 0;
+  const winRateProgress = Math.min(100, (safeWinRate / 90) * 100);
+  const winRateColor = safeWinRate >= 90 ? 'success' :
+                        safeWinRate >= 70 ? 'warning' : 'danger';
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
@@ -77,7 +78,9 @@ const AccountStats: React.FC<AccountStatsProps> = ({ stats, isLoading, error }) 
           <p className={`text-sm ${
             stats.totalPnl >= 0 ? 'text-success-400' : 'text-danger-400'
           }`}>
-            {stats.totalPnlPercent >= 0 ? '+' : ''}{stats.totalPnlPercent.toFixed(2)}%
+            {stats.totalPnlPercent !== undefined && stats.totalPnlPercent !== null
+              ? `${stats.totalPnlPercent >= 0 ? '+' : ''}${stats.totalPnlPercent.toFixed(2)}%`
+              : '0.00%'}
           </p>
         </div>
 
@@ -92,7 +95,9 @@ const AccountStats: React.FC<AccountStatsProps> = ({ stats, isLoading, error }) 
           <p className={`text-sm ${
             stats.dailyPnl >= 0 ? 'text-success-400' : 'text-danger-400'
           }`}>
-            {stats.dailyPnlPercent >= 0 ? '+' : ''}{stats.dailyPnlPercent.toFixed(2)}%
+            {stats.dailyPnlPercent !== undefined && stats.dailyPnlPercent !== null
+              ? `${stats.dailyPnlPercent >= 0 ? '+' : ''}${stats.dailyPnlPercent.toFixed(2)}%`
+              : '0.00%'}
           </p>
         </div>
       </div>
@@ -105,7 +110,7 @@ const AccountStats: React.FC<AccountStatsProps> = ({ stats, isLoading, error }) 
             <p className="text-xs text-gray-500">{stats.totalTrades} trades completed</p>
           </div>
           <p className={`text-xl font-bold text-${winRateColor}-500`}>
-            {stats.winRate.toFixed(1)}%
+            {stats.winRate !== undefined && stats.winRate !== null ? stats.winRate.toFixed(1) : '0.0'}%
           </p>
         </div>
         <div className="w-full bg-gray-700 rounded-full h-3">
@@ -157,7 +162,7 @@ const AccountStats: React.FC<AccountStatsProps> = ({ stats, isLoading, error }) 
       </div>
 
       {/* Risk Alerts */}
-      {(stats.consecutiveLosses >= 2 || stats.dailyPnlPercent <= -2) && (
+      {(stats.consecutiveLosses >= 2 || (stats.dailyPnlPercent !== undefined && stats.dailyPnlPercent !== null && stats.dailyPnlPercent <= -2)) && (
         <div className="mt-4 bg-warning-500/10 border border-warning-500 rounded-lg p-4">
           <p className="text-warning-500 font-semibold text-sm mb-2">⚠️ Risk Alerts</p>
           <ul className="text-xs text-gray-300 space-y-1">
@@ -167,10 +172,10 @@ const AccountStats: React.FC<AccountStatsProps> = ({ stats, isLoading, error }) 
             {stats.consecutiveLosses >= 3 && (
               <li className="text-danger-400">• CRITICAL: 3 consecutive losses - system should pause</li>
             )}
-            {stats.dailyPnlPercent <= -2 && (
+            {stats.dailyPnlPercent !== undefined && stats.dailyPnlPercent !== null && stats.dailyPnlPercent <= -2 && (
               <li>• Daily loss at {stats.dailyPnlPercent.toFixed(2)}%</li>
             )}
-            {stats.dailyPnlPercent <= -3 && (
+            {stats.dailyPnlPercent !== undefined && stats.dailyPnlPercent !== null && stats.dailyPnlPercent <= -3 && (
               <li className="text-danger-400">• CRITICAL: Daily loss limit reached (-3%)</li>
             )}
           </ul>

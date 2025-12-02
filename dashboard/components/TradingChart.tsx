@@ -36,7 +36,7 @@ export default function TradingChart({ positions = [] }: TradingChartProps) {
         { refreshInterval: 30000 } // Refresh every 30 seconds
     );
 
-    const candles = candlesData?.candles || [];
+    const candles = candlesData || [];
     const patterns = patternsData || { swings: [], fvgs: [], choch: null, bos: null };
 
     return (
