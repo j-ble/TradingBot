@@ -5,3 +5,5 @@ loguru==0.7.2
 python-dotenv==1.0.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
+cryptography==41.0.7
+PyJWT==2.8.0
