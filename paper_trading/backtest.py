@@ -46,8 +46,8 @@ class Backtester:
 
     Strategy Rules:
     1. 4H liquidity sweep detection
-    2. 5M confluence: CHoCH → FVG → BOS
-    3. Swing-based stop loss (5M → 4H priority)
+    2. 5M confluence: CHoCH → FVG → FVG Fill → BOS
+    3. Swing-based stop loss (5M → 4H priority, 0.5%-3% from entry)
     4. 1% fixed risk per trade
     5. Minimum 2:1 R/R ratio
     """
@@ -70,7 +70,7 @@ class Backtester:
         """
         Detect 4H liquidity sweep at current candle.
 
-        Swing pattern: 3-candle swing high/low
+        Swing pattern: 2-candle swing high/low
         Sweep: Price breaks swing level by ±0.1%
 
         Args:
@@ -80,8 +80,8 @@ class Backtester:
         Returns:
             Sweep dict with bias or None
         """
-        # Need at least 5 candles for swing detection
-        if current_index < 5:
+        # Need at least 3 candles for 2-candle swing detection
+        if current_index < 3:
             return None
 
         # Look back 10 candles for swing levels
@@ -93,23 +93,21 @@ class Backtester:
         current_low = Decimal(str(current['low']))
 
         # Check for swing high sweep (BEARISH bias)
-        for i in range(current_index - 2, current_index - lookback, -1):
-            if i < 2:
+        for i in range(current_index - 1, current_index - lookback, -1):
+            if i < 1:
                 break
 
             c = candles_4h[i]
             c_prev = candles_4h[i-1]
-            c_prev2 = candles_4h[i-2]
             c_next = candles_4h[i+1] if i+1 < len(candles_4h) else None
-            c_next2 = candles_4h[i+2] if i+2 < len(candles_4h) else None
 
-            if not c_next or not c_next2:
+            if not c_next:
                 continue
 
-            # 3-candle swing high pattern
+            # 2-candle swing high pattern
             high = Decimal(str(c['high']))
-            if (high > Decimal(str(c_prev2['high'])) and
-                high > Decimal(str(c_next2['high']))):
+            if (high > Decimal(str(c_prev['high'])) and
+                high > Decimal(str(c_next['high']))):
 
                 # Check if current candle sweeps this swing high
                 sweep_level = high * (Decimal('1') + sweep_threshold)
@@ -126,23 +124,21 @@ class Backtester:
                     }
 
         # Check for swing low sweep (BULLISH bias)
-        for i in range(current_index - 2, current_index - lookback, -1):
-            if i < 2:
+        for i in range(current_index - 1, current_index - lookback, -1):
+            if i < 1:
                 break
 
             c = candles_4h[i]
             c_prev = candles_4h[i-1]
-            c_prev2 = candles_4h[i-2]
             c_next = candles_4h[i+1] if i+1 < len(candles_4h) else None
-            c_next2 = candles_4h[i+2] if i+2 < len(candles_4h) else None
 
-            if not c_next or not c_next2:
+            if not c_next:
                 continue
 
-            # 3-candle swing low pattern
+            # 2-candle swing low pattern
             low = Decimal(str(c['low']))
-            if (low < Decimal(str(c_prev2['low'])) and
-                low < Decimal(str(c_next2['low']))):
+            if (low < Decimal(str(c_prev['low'])) and
+                low < Decimal(str(c_next['low']))):
 
                 # Check if current candle sweeps this swing low
                 sweep_level = low * (Decimal('1') - sweep_threshold)
@@ -160,6 +156,323 @@ class Backtester:
 
         return None
 
+    def detect_choch(
+        self,
+        candles_5m: List[Dict[str, Any]],
+        current_index: int,
+        bias: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Detect CHoCH (Change of Character) - 5 minute break of recent structure high/low.
+
+        CHoCH Detection Logic:
+        - LOOKBACK_PERIOD: 5 candles (5M timeframe)
+        - BREAK_THRESHOLD: 0.1%
+        - BULLISH: Current 5M candle close breaks above recent swing high
+        - BEARISH: Current 5M candle close breaks below recent swing low
+
+        Args:
+            candles_5m: 5M candle data
+            current_index: Current candle index
+            bias: 'BULLISH' or 'BEARISH'
+
+        Returns:
+            CHoCH detection result or None
+        """
+        LOOKBACK_PERIOD = 5
+        BREAK_THRESHOLD = Decimal('0.001')  # 0.1%
+
+        # Need at least LOOKBACK_PERIOD + 1 candles
+        if current_index < LOOKBACK_PERIOD:
+            return None
+
+        current = candles_5m[current_index]
+        current_close = Decimal(str(current['close']))
+
+        # Get recent candles for structure
+        recent_start = current_index - LOOKBACK_PERIOD
+        recent_candles = candles_5m[recent_start:current_index]
+
+        if bias == 'BULLISH':
+            # Find highest high in recent candles
+            recent_highs = [Decimal(str(c['high'])) for c in recent_candles]
+            max_recent_high = max(recent_highs)
+            break_level = max_recent_high * (Decimal('1') + BREAK_THRESHOLD)
+
+            # Check if current close breaks above
+            if current_close > break_level:
+                logger.debug(
+                    f"CHoCH BULLISH detected: close=${current_close:.2f} > "
+                    f"break_level=${break_level:.2f} (structure=${max_recent_high:.2f})"
+                )
+                return {
+                    'detected': True,
+                    'type': 'BULLISH',
+                    'price': current_close,
+                    'structure_level': max_recent_high,
+                    'timestamp': current['timestamp']
+                }
+
+        elif bias == 'BEARISH':
+            # Find lowest low in recent candles
+            recent_lows = [Decimal(str(c['low'])) for c in recent_candles]
+            min_recent_low = min(recent_lows)
+            break_level = min_recent_low * (Decimal('1') - BREAK_THRESHOLD)
+
+            # Check if current close breaks below
+            if current_close < break_level:
+                logger.debug(
+                    f"CHoCH BEARISH detected: close=${current_close:.2f} < "
+                    f"break_level=${break_level:.2f} (structure=${min_recent_low:.2f})"
+                )
+                return {
+                    'detected': True,
+                    'type': 'BEARISH',
+                    'price': current_close,
+                    'structure_level': min_recent_low,
+                    'timestamp': current['timestamp']
+                }
+
+        return None
+
+    def detect_fvg(
+        self,
+        candles_5m: List[Dict[str, Any]],
+        current_index: int,
+        bias: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Detect FVG (Fair Value Gap) - 3-candle gap pattern.
+
+        FVG Detection Logic (matches Node.js implementation):
+        - MIN_GAP_PERCENT: 0.1%
+        - BULLISH FVG: Gap between c1.high and c3.low (c3.low > c1.high)
+        - BEARISH FVG: Gap between c1.low and c3.high (c3.high < c1.low)
+
+        Args:
+            candles_5m: 5M candle data
+            current_index: Current candle index (must be at least index 2)
+            bias: 'BULLISH' or 'BEARISH'
+
+        Returns:
+            FVG zone dict or None
+        """
+        MIN_GAP_PERCENT = Decimal('0.001')  # 0.1%
+
+        # Need at least 3 candles
+        if current_index < 2:
+            return None
+
+        # Get last 3 candles
+        c1 = candles_5m[current_index - 2]
+        c2 = candles_5m[current_index - 1]
+        c3 = candles_5m[current_index]
+
+        if bias == 'BULLISH':
+            c1_high = Decimal(str(c1['high']))
+            c3_low = Decimal(str(c3['low']))
+            current_price = Decimal(str(c3['close']))
+
+            # Check for gap: c3.low > c1.high
+            if c3_low > c1_high:
+                gap_size = c3_low - c1_high
+                gap_percent = gap_size / current_price
+
+                # Validate minimum gap size
+                if gap_percent >= MIN_GAP_PERCENT:
+                    logger.debug(
+                        f"FVG BULLISH detected: gap ${c1_high:.2f} to ${c3_low:.2f}, "
+                        f"size=${gap_size:.2f} ({gap_percent*100:.3f}%)"
+                    )
+                    return {
+                        'type': 'BULLISH',
+                        'top': c3_low,
+                        'bottom': c1_high,
+                        'size': gap_size,
+                        'percent': gap_percent,
+                        'timestamp': c3['timestamp'],
+                        'filled': False
+                    }
+
+        elif bias == 'BEARISH':
+            c1_low = Decimal(str(c1['low']))
+            c3_high = Decimal(str(c3['high']))
+            current_price = Decimal(str(c3['close']))
+
+            # Check for gap: c3.high < c1.low
+            if c3_high < c1_low:
+                gap_size = c1_low - c3_high
+                gap_percent = gap_size / current_price
+
+                # Validate minimum gap size
+                if gap_percent >= MIN_GAP_PERCENT:
+                    logger.debug(
+                        f"FVG BEARISH detected: gap ${c3_high:.2f} to ${c1_low:.2f}, "
+                        f"size=${gap_size:.2f} ({gap_percent*100:.3f}%)"
+                    )
+                    return {
+                        'type': 'BEARISH',
+                        'top': c1_low,
+                        'bottom': c3_high,
+                        'size': gap_size,
+                        'percent': gap_percent,
+                        'timestamp': c3['timestamp'],
+                        'filled': False
+                    }
+
+        return None
+
+    def detect_fvg_fill(
+        self,
+        candle: Dict[str, Any],
+        fvg_zone: Dict[str, Any],
+        bias: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Detect if FVG zone has been filled (price retraced into gap).
+
+        Args:
+            candle: Current candle to check
+            fvg_zone: The FVG zone dict from detect_fvg
+            bias: 'BULLISH' or 'BEARISH'
+
+        Returns:
+            Fill detection result or None
+        """
+        if not fvg_zone:
+            return None
+
+        candle_low = Decimal(str(candle['low']))
+        candle_high = Decimal(str(candle['high']))
+
+        if bias == 'BULLISH':
+            # For bullish FVG, price needs to dip into the gap (retrace down)
+            if candle_low <= fvg_zone['top'] and candle_low >= fvg_zone['bottom']:
+                logger.debug(
+                    f"FVG BULLISH FILLED: price=${candle_low:.2f} entered gap "
+                    f"[${fvg_zone['bottom']:.2f}, ${fvg_zone['top']:.2f}]"
+                )
+                return {
+                    'filled': True,
+                    'fill_price': candle_low,
+                    'timestamp': candle['timestamp']
+                }
+
+        elif bias == 'BEARISH':
+            # For bearish FVG, price needs to rise into the gap (retrace up)
+            if candle_high >= fvg_zone['bottom'] and candle_high <= fvg_zone['top']:
+                logger.debug(
+                    f"FVG BEARISH FILLED: price=${candle_high:.2f} entered gap "
+                    f"[${fvg_zone['bottom']:.2f}, ${fvg_zone['top']:.2f}]"
+                )
+                return {
+                    'filled': True,
+                    'fill_price': candle_high,
+                    'timestamp': candle['timestamp']
+                }
+
+        return None
+
+    def detect_bos(
+        self,
+        candles_5m: List[Dict[str, Any]],
+        current_index: int,
+        bias: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Detect BOS (Break of Structure) - candle closure above most recent 5M swing high/low.
+
+        BOS Detection Logic:
+        - Finds most recent 5M swing high (BULLISH) or swing low (BEARISH)
+        - BULLISH: Current candle close above most recent 5M swing high
+        - BEARISH: Current candle close below most recent 5M swing low
+        - Strong continuation confluence signal
+
+        Args:
+            candles_5m: 5M candle data
+            current_index: Current candle index
+            bias: 'BULLISH' or 'BEARISH'
+
+        Returns:
+            BOS detection result or None
+        """
+        # Need enough history to find swing
+        if current_index < 3:
+            return None
+
+        current_candle = candles_5m[current_index]
+        current_close = Decimal(str(current_candle['close']))
+
+        # Find most recent swing high/low (lookback 20 candles)
+        lookback = min(20, current_index - 2)
+        swing_level = None
+
+        if bias == 'BULLISH':
+            # Look for most recent swing high (2-candle pattern)
+            for i in range(current_index - 1, current_index - lookback, -1):
+                if i < 1:
+                    break
+
+                c = candles_5m[i]
+                c_prev = candles_5m[i-1]
+                c_next = candles_5m[i+1] if i+1 < len(candles_5m) else None
+
+                if not c_next:
+                    continue
+
+                # 2-candle swing high
+                high = Decimal(str(c['high']))
+                if (high > Decimal(str(c_prev['high'])) and
+                    high > Decimal(str(c_next['high']))):
+                    swing_level = high
+                    break
+
+            if swing_level and current_close > swing_level:
+                logger.debug(
+                    f"BOS BULLISH detected: close=${current_close:.2f} > "
+                    f"swing_high=${swing_level:.2f}"
+                )
+                return {
+                    'detected': True,
+                    'type': 'BULLISH',
+                    'price': current_close,
+                    'structure_level': swing_level
+                }
+
+        elif bias == 'BEARISH':
+            # Look for most recent swing low (2-candle pattern)
+            for i in range(current_index - 1, current_index - lookback, -1):
+                if i < 1:
+                    break
+
+                c = candles_5m[i]
+                c_prev = candles_5m[i-1]
+                c_next = candles_5m[i+1] if i+1 < len(candles_5m) else None
+
+                if not c_next:
+                    continue
+
+                # 2-candle swing low
+                low = Decimal(str(c['low']))
+                if (low < Decimal(str(c_prev['low'])) and
+                    low < Decimal(str(c_next['low']))):
+                    swing_level = low
+                    break
+
+            if swing_level and current_close < swing_level:
+                logger.debug(
+                    f"BOS BEARISH detected: close=${current_close:.2f} < "
+                    f"swing_low=${swing_level:.2f}"
+                )
+                return {
+                    'detected': True,
+                    'type': 'BEARISH',
+                    'price': current_close,
+                    'structure_level': swing_level
+                }
+
+        return None
+
     async def detect_5m_confluence(
         self,
         candles_5m: List[Dict[str, Any]],
@@ -168,13 +481,17 @@ class Backtester:
         bias: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Simplified 5M confluence detection for backtesting.
+        Full 5M confluence detection: CHoCH → FVG → BOS (EXACT ORDER REQUIRED).
 
-        In backtest mode, we look for:
-        1. Price movement in bias direction
-        2. Valid swing levels for stop loss
+        This is the COMPLETE implementation matching your Node.js scanners.
+        All three patterns must occur in sequence within the search window.
 
-        In production, the Node.js scanner does full CHoCH→FVG→BOS detection.
+        State Machine:
+        1. WAITING_CHOCH: Looking for CHoCH break
+        2. WAITING_FVG: CHoCH found, looking for FVG
+        3. WAITING_FVG_FILL: FVG found, looking for fill
+        4. WAITING_BOS: FVG filled, looking for BOS
+        5. COMPLETE: All confluences met → TRADE SIGNAL
 
         Args:
             candles_5m: 5M candle data
@@ -183,32 +500,64 @@ class Backtester:
             bias: 'BULLISH' or 'BEARISH'
 
         Returns:
-            Confluence signal or None
+            Complete confluence signal or None
         """
-        # Simplified: Look for price movement confirming bias
-        window = candles_5m[start_index:end_index+1]
-        if not window:
-            return None
+        # State tracking
+        choch_result = None
+        fvg_result = None
+        fvg_fill_result = None
+        bos_result = None
 
-        first_price = Decimal(str(window[0]['close']))
-        last_price = Decimal(str(window[-1]['close']))
+        # Process each candle in the window
+        for i in range(start_index, min(end_index + 1, len(candles_5m))):
+            candle = candles_5m[i]
 
-        # BULLISH: Price should be rising
-        if bias == 'BULLISH' and last_price > first_price * Decimal('1.002'):  # 0.2% move
-            return {
-                'bias': bias,
-                'bos_price': last_price,
-                'timestamp': window[-1]['timestamp']
-            }
+            # STATE 1: Looking for CHoCH
+            if not choch_result:
+                choch_result = self.detect_choch(candles_5m, i, bias)
+                if choch_result:
+                    logger.debug(f"CHoCH detected at index {i}, timestamp {candle['timestamp']}")
+                continue
 
-        # BEARISH: Price should be falling
-        if bias == 'BEARISH' and last_price < first_price * Decimal('0.998'):  # 0.2% move
-            return {
-                'bias': bias,
-                'bos_price': last_price,
-                'timestamp': window[-1]['timestamp']
-            }
+            # STATE 2: CHoCH found, looking for FVG
+            if choch_result and not fvg_result:
+                fvg_result = self.detect_fvg(candles_5m, i, bias)
+                if fvg_result:
+                    logger.debug(f"FVG detected at index {i}, timestamp {candle['timestamp']}")
+                continue
 
+            # STATE 3: FVG found, looking for FVG fill
+            if fvg_result and not fvg_fill_result:
+                fvg_fill_result = self.detect_fvg_fill(candle, fvg_result, bias)
+                if fvg_fill_result:
+                    logger.debug(f"FVG FILL detected at index {i}, timestamp {candle['timestamp']}")
+                continue
+
+            # STATE 4: FVG filled, looking for BOS
+            if fvg_fill_result and not bos_result:
+                bos_result = self.detect_bos(
+                    candles_5m,
+                    i,
+                    bias
+                )
+                if bos_result:
+                    logger.info(
+                        f"CONFLUENCE COMPLETE at index {i}, timestamp {candle['timestamp']}: "
+                        f"CHoCH → FVG → FVG_FILL → BOS ({bias})"
+                    )
+                    return {
+                        'bias': bias,
+                        'bos_price': Decimal(str(candle['close'])),
+                        'timestamp': candle['timestamp'],
+                        'choch': choch_result,
+                        'fvg': fvg_result,
+                        'fvg_fill': fvg_fill_result,
+                        'bos': bos_result
+                    }
+
+        # Confluence not completed in window
+        if choch_result:
+            logger.debug(f"Partial confluence: CHoCH found but sequence incomplete")
         return None
 
     async def find_swing_level(
@@ -218,7 +567,7 @@ class Backtester:
         swing_type: str
     ) -> Optional[Decimal]:
         """
-        Find most recent swing high/low for stop loss.
+        Find most recent swing high/low for stop loss using 2-candle pattern.
 
         Args:
             candles: Candle data (5M or 4H)
@@ -228,29 +577,29 @@ class Backtester:
         Returns:
             Swing price or None
         """
-        lookback = min(20, current_index - 2)
+        lookback = min(20, current_index - 1)
 
-        for i in range(current_index - 2, current_index - lookback, -1):
-            if i < 2:
+        for i in range(current_index - 1, current_index - lookback, -1):
+            if i < 1:
                 break
 
             c = candles[i]
-            c_prev2 = candles[i-2]
-            c_next2 = candles[i+2] if i+2 < len(candles) else None
+            c_prev = candles[i-1]
+            c_next = candles[i+1] if i+1 < len(candles) else None
 
-            if not c_next2:
+            if not c_next:
                 continue
 
             if swing_type == 'HIGH':
                 high = Decimal(str(c['high']))
-                if (high > Decimal(str(c_prev2['high'])) and
-                    high > Decimal(str(c_next2['high']))):
+                if (high > Decimal(str(c_prev['high'])) and
+                    high > Decimal(str(c_next['high']))):
                     return high
 
             elif swing_type == 'LOW':
                 low = Decimal(str(c['low']))
-                if (low < Decimal(str(c_prev2['low'])) and
-                    low < Decimal(str(c_next2['low']))):
+                if (low < Decimal(str(c_prev['low'])) and
+                    low < Decimal(str(c_next['low']))):
                     return low
 
         return None
@@ -710,6 +1059,25 @@ class Backtester:
         print(f"  Best Trade:        ${results['best_trade']:,.2f}")
         print(f"  Worst Trade:       ${results['worst_trade']:,.2f}")
         print(f"  Avg R/R Ratio:     {results['avg_rr_ratio']:.2f}:1")
+
+        # Print trade-by-trade details with entry day and time
+        if results['trades']:
+            print(f"\n[TRADE HISTORY]")
+            for idx, trade in enumerate(results['trades'], 1):
+                entry_day = trade.entry_time.strftime('%A')  # Day name (e.g., Monday)
+                entry_date = trade.entry_time.strftime('%Y-%m-%d')
+                entry_time = trade.entry_time.strftime('%H:%M:%S')
+
+                print(f"\n  Trade #{idx}:")
+                print(f"    Entry Day:       {entry_day}, {entry_date} {entry_time}")
+                print(f"    Direction:       {trade.direction}")
+                print(f"    Entry Price:     ${trade.entry_price:,.2f}")
+                print(f"    Exit Price:      ${trade.exit_price:,.2f}")
+                print(f"    P&L:             ${trade.pnl_usd:,.2f}")
+                print(f"    Outcome:         {trade.outcome}")
+                print(f"    Exit Reason:     {trade.exit_reason}")
+                print(f"    Stop Source:     {trade.stop_loss_source}")
+                print(f"    R/R Ratio:       {trade.risk_reward_ratio:.2f}:1")
 
         print("\n" + "=" * 60)
 
