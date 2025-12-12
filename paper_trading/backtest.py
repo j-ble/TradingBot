@@ -45,9 +45,9 @@ class Backtester:
     Backtesting engine that processes historical data to simulate trading.
 
     Strategy Rules:
-    1. 4H liquidity sweep detection
+    1. 4H higher low/lower high detection (triggers immediate 5M scanning)
     2. 5M confluence: CHoCH → FVG → FVG Fill → BOS
-    3. Swing-based stop loss at most recent 5M or 4H swing (no distance limit)
+    3. Swing-based stop loss at most recent 5M or 4H swing high/low (3-candle pattern)
     4. 1% fixed risk per trade (position sized accordingly)
     5. R/R ratio: 1:1 minimum, 2:1 maximum
     """
@@ -68,32 +68,33 @@ class Backtester:
         current_index: int
     ) -> Optional[Dict[str, Any]]:
         """
-        Detect 4H liquidity sweep at current candle.
+        Detect 4H higher low (BULLISH) or lower high (BEARISH) pattern.
+        Triggers immediate 5M confluence scanning.
 
-        Swing pattern: 2-candle swing high/low
-        Sweep: Price breaks swing level by ±0.1%
+        Higher Low: Current low > previous swing low (BULLISH bias)
+        Lower High: Current high < previous swing high (BEARISH bias)
 
         Args:
             candles_4h: List of 4H candles
             current_index: Current candle index
 
         Returns:
-            Sweep dict with bias or None
+            Pattern dict with bias or None
         """
-        # Need at least 3 candles for 2-candle swing detection
-        if current_index < 3:
+        # Need at least 2 candles to detect higher low/lower high
+        if current_index < 2:
             return None
 
-        # Look back 10 candles for swing levels
+        # Look back for previous swing levels
         lookback = min(10, current_index)
-        sweep_threshold = Decimal('0.001')  # 0.1%
 
         current = candles_4h[current_index]
         current_high = Decimal(str(current['high']))
         current_low = Decimal(str(current['low']))
 
-        # Check for swing high sweep (BEARISH bias)
-        for i in range(current_index - 1, current_index - lookback, -1):
+        # Find most recent swing low (for higher low detection)
+        prev_swing_low = None
+        for i in range(current_index - 1, max(0, current_index - lookback), -1):
             if i < 1:
                 break
 
@@ -104,55 +105,60 @@ class Backtester:
             if not c_next:
                 continue
 
-            # 2-candle swing high pattern
-            high = Decimal(str(c['high']))
-            if (high > Decimal(str(c_prev['high'])) and
-                high > Decimal(str(c_next['high']))):
-
-                # Check if current candle sweeps this swing high
-                sweep_level = high * (Decimal('1') + sweep_threshold)
-                if current_high >= sweep_level:
-                    logger.info(
-                        f"4H HIGH sweep detected: ${high} swept by ${current_high} "
-                        f"at {current['timestamp']} -> BEARISH bias"
-                    )
-                    return {
-                        'sweep_type': 'HIGH',
-                        'bias': 'BEARISH',
-                        'price': high,
-                        'timestamp': current['timestamp']
-                    }
-
-        # Check for swing low sweep (BULLISH bias)
-        for i in range(current_index - 1, current_index - lookback, -1):
-            if i < 1:
-                break
-
-            c = candles_4h[i]
-            c_prev = candles_4h[i-1]
-            c_next = candles_4h[i+1] if i+1 < len(candles_4h) else None
-
-            if not c_next:
-                continue
-
-            # 2-candle swing low pattern
+            # 3-candle swing low pattern
             low = Decimal(str(c['low']))
             if (low < Decimal(str(c_prev['low'])) and
                 low < Decimal(str(c_next['low']))):
+                prev_swing_low = low
+                break
 
-                # Check if current candle sweeps this swing low
-                sweep_level = low * (Decimal('1') - sweep_threshold)
-                if current_low <= sweep_level:
-                    logger.info(
-                        f"4H LOW sweep detected: ${low} swept by ${current_low} "
-                        f"at {current['timestamp']} -> BULLISH bias"
-                    )
-                    return {
-                        'sweep_type': 'LOW',
-                        'bias': 'BULLISH',
-                        'price': low,
-                        'timestamp': current['timestamp']
-                    }
+        # Check for HIGHER LOW (BULLISH bias)
+        if prev_swing_low and current_low > prev_swing_low:
+            logger.info(
+                f"4H HIGHER LOW detected: current_low=${current_low} > prev_swing_low=${prev_swing_low} "
+                f"at {current['timestamp']} -> BULLISH bias (triggering 5M scan)"
+            )
+            return {
+                'pattern_type': 'HIGHER_LOW',
+                'bias': 'BULLISH',
+                'current_low': current_low,
+                'prev_swing_low': prev_swing_low,
+                'timestamp': current['timestamp']
+            }
+
+        # Find most recent swing high (for lower high detection)
+        prev_swing_high = None
+        for i in range(current_index - 1, max(0, current_index - lookback), -1):
+            if i < 1:
+                break
+
+            c = candles_4h[i]
+            c_prev = candles_4h[i-1]
+            c_next = candles_4h[i+1] if i+1 < len(candles_4h) else None
+
+            if not c_next:
+                continue
+
+            # 3-candle swing high pattern
+            high = Decimal(str(c['high']))
+            if (high > Decimal(str(c_prev['high'])) and
+                high > Decimal(str(c_next['high']))):
+                prev_swing_high = high
+                break
+
+        # Check for LOWER HIGH (BEARISH bias)
+        if prev_swing_high and current_high < prev_swing_high:
+            logger.info(
+                f"4H LOWER HIGH detected: current_high=${current_high} < prev_swing_high=${prev_swing_high} "
+                f"at {current['timestamp']} -> BEARISH bias (triggering 5M scan)"
+            )
+            return {
+                'pattern_type': 'LOWER_HIGH',
+                'bias': 'BEARISH',
+                'current_high': current_high,
+                'prev_swing_high': prev_swing_high,
+                'timestamp': current['timestamp']
+            }
 
         return None
 
@@ -166,7 +172,7 @@ class Backtester:
         Detect CHoCH (Change of Character) - 5 minute break of recent structure high/low.
 
         CHoCH Detection Logic:
-        - LOOKBACK_PERIOD: 5 candles (5M timeframe)
+        - LOOKBACK_PERIOD: 20 candles (5M timeframe)
         - BREAK_THRESHOLD: 0.1%
         - BULLISH: Current 5M candle close breaks above recent swing high
         - BEARISH: Current 5M candle close breaks below recent swing low
@@ -179,7 +185,7 @@ class Backtester:
         Returns:
             CHoCH detection result or None
         """
-        LOOKBACK_PERIOD = 5
+        LOOKBACK_PERIOD = 20
         BREAK_THRESHOLD = Decimal('0.001')  # 0.1%
 
         # Need at least LOOKBACK_PERIOD + 1 candles
@@ -436,7 +442,8 @@ class Backtester:
                     'detected': True,
                     'type': 'BULLISH',
                     'price': current_close,
-                    'structure_level': swing_level
+                    'structure_level': swing_level,
+                    'timestamp': current_candle['timestamp']
                 }
 
         elif bias == 'BEARISH':
@@ -468,7 +475,8 @@ class Backtester:
                     'detected': True,
                     'type': 'BEARISH',
                     'price': current_close,
-                    'structure_level': swing_level
+                    'structure_level': swing_level,
+                    'timestamp': current_candle['timestamp']
                 }
 
         return None
@@ -516,21 +524,30 @@ class Backtester:
             if not choch_result:
                 choch_result = self.detect_choch(candles_5m, i, bias)
                 if choch_result:
-                    logger.debug(f"CHoCH detected at index {i}, timestamp {candle['timestamp']}")
+                    logger.info(
+                        f"✓ CHoCH DETECTED at {candle['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "
+                        f"(index {i}) - {bias} bias confirmed"
+                    )
                 continue
 
             # STATE 2: CHoCH found, looking for FVG
             if choch_result and not fvg_result:
                 fvg_result = self.detect_fvg(candles_5m, i, bias)
                 if fvg_result:
-                    logger.debug(f"FVG detected at index {i}, timestamp {candle['timestamp']}")
+                    logger.info(
+                        f"✓ FVG DETECTED at {candle['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "
+                        f"(index {i}) - Gap zone: ${fvg_result['bottom']:.2f} to ${fvg_result['top']:.2f}"
+                    )
                 continue
 
             # STATE 3: FVG found, looking for FVG fill
             if fvg_result and not fvg_fill_result:
                 fvg_fill_result = self.detect_fvg_fill(candle, fvg_result, bias)
                 if fvg_fill_result:
-                    logger.debug(f"FVG FILL detected at index {i}, timestamp {candle['timestamp']}")
+                    logger.info(
+                        f"✓ FVG FILL DETECTED at {candle['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "
+                        f"(index {i}) - Price entered gap at ${fvg_fill_result['fill_price']:.2f}"
+                    )
                 continue
 
             # STATE 4: FVG filled, looking for BOS
@@ -542,8 +559,18 @@ class Backtester:
                 )
                 if bos_result:
                     logger.info(
-                        f"CONFLUENCE COMPLETE at index {i}, timestamp {candle['timestamp']}: "
-                        f"CHoCH → FVG → FVG_FILL → BOS ({bias})"
+                        f"✓ BOS DETECTED at {candle['timestamp'].strftime('%Y-%m-%d %H:%M:%S')} "
+                        f"(index {i}) - Structure broken at ${bos_result['price']:.2f}"
+                    )
+                    logger.info(
+                        f"\n{'='*80}\n"
+                        f"🎯 FULL CONFLUENCE COMPLETE ({bias})\n"
+                        f"{'='*80}\n"
+                        f"CHoCH:    {choch_result['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"FVG:      {fvg_result['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"FVG Fill: {fvg_fill_result['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"BOS:      {candle['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"{'='*80}"
                     )
                     return {
                         'bias': bias,
@@ -567,7 +594,7 @@ class Backtester:
         swing_type: str
     ) -> Optional[Decimal]:
         """
-        Find most recent swing high/low for stop loss using 2-candle pattern.
+        Find most recent swing high/low for stop loss using 3-candle pattern.
 
         Args:
             candles: Candle data (5M or 4H)
@@ -580,11 +607,12 @@ class Backtester:
         lookback = min(20, current_index - 1)
 
         for i in range(current_index - 1, current_index - lookback, -1):
-            if i < 1:
+            if i < 2:
                 break
 
             c = candles[i]
             c_prev = candles[i-1]
+            c_prev2 = candles[i-2]
             c_next = candles[i+1] if i+1 < len(candles) else None
 
             if not c_next:
@@ -592,13 +620,17 @@ class Backtester:
 
             if swing_type == 'HIGH':
                 high = Decimal(str(c['high']))
+                # 3-candle swing high: current higher than both previous and next
                 if (high > Decimal(str(c_prev['high'])) and
+                    high > Decimal(str(c_prev2['high'])) and
                     high > Decimal(str(c_next['high']))):
                     return high
 
             elif swing_type == 'LOW':
                 low = Decimal(str(c['low']))
+                # 3-candle swing low: current lower than both previous and next
                 if (low < Decimal(str(c_prev['low'])) and
+                    low < Decimal(str(c_prev2['low'])) and
                     low < Decimal(str(c_next['low']))):
                     return low
 
@@ -748,9 +780,17 @@ class Backtester:
             return None
 
         logger.info(
-            f"Backtest trade EXECUTED: {direction} @ ${entry_price_slipped:.2f}\n"
-            f"  SL: ${stop_result['price']:.2f} ({stop_result['source']})\n"
-            f"  TP: ${stop_result['min_tp']:.2f} (R/R: {trade['rr_ratio']:.2f}:1)"
+            f"\n{'='*80}\n"
+            f"📊 TRADE EXECUTED\n"
+            f"{'='*80}\n"
+            f"Direction:     {direction}\n"
+            f"Entry Price:   ${entry_price_slipped:,.2f}\n"
+            f"Stop Loss:     ${stop_result['price']:,.2f} ({stop_result['source']})\n"
+            f"Take Profit:   ${stop_result['min_tp']:,.2f}\n"
+            f"Position Size: {position.btc:.8f} BTC (${position.usd:,.2f})\n"
+            f"Risk Amount:   ${position.risk_amount:,.2f} (1% of balance)\n"
+            f"R/R Ratio:     {trade['rr_ratio']:.2f}:1\n"
+            f"{'='*80}"
         )
 
         return trade
@@ -983,6 +1023,23 @@ class Backtester:
 
             entry_candle = candles_5m[entry_index]
             entry_price = Decimal(str(entry_candle['close']))
+
+            # Log why this trade is being executed
+            logger.info(
+                f"\n{'='*80}\n"
+                f"🎯 TRADE SETUP COMPLETE - Executing {sweep['bias']} Trade\n"
+                f"{'='*80}\n"
+                f"4H Pattern:    {sweep['pattern_type']}\n"
+                f"4H Timestamp:  {sweep['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"\n5M Confluence Timeline:\n"
+                f"  1. CHoCH:    {confluence['choch']['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"  2. FVG:      {confluence['fvg']['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"  3. FVG Fill: {confluence['fvg_fill']['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"  4. BOS:      {confluence['bos']['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"\nEntry Price:   ${entry_price:,.2f}\n"
+                f"Entry Time:    {entry_candle['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"{'='*80}"
+            )
 
             # Execute trade
             trade = await self.execute_backtest_trade(

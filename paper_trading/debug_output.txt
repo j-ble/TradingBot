@@ -1,0 +1,360 @@
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36mdatabase.connection[0m:[36mconnect[0m:[36m39[0m - [1mDatabase pool connected to localhost:5432/trading_bot[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m915[0m - [1m============================================================[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m916[0m - [1mSTARTING BACKTEST[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m917[0m - [1m============================================================[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m926[0m - [1mLoaded 221 4H candles, 1615 5M candles[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m928[0m - [1mDEBUG: First 4H candle timestamp: 2024-01-01 00:00:00+00:00[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m929[0m - [1mDEBUG: Last 4H candle timestamp: 2025-12-02 12:00:00+00:00[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m930[0m - [1mDEBUG: start_date=2025-09-13 20:10:25.786484, end_date=2025-12-12 20:10:25.786484[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m941[0m - [1mBacktest period: 2025-10-08 18:00:00+00:00 to 2025-12-02 12:00:00+00:00[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m944[0m - [1mStarting balance: $100.00
+[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $121948.77 swept by $122600.00 at 2025-10-10 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $119713.65 swept by $107000.00 at 2025-10-10 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 29, timestamp 2025-11-23 13:35:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BULLISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: LONG @ $86659.86
+  SL: $86189.47 (5M_SWING)
+  TP: $87043.63 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (TRAILING_STOP): LOSS | P&L: $-2.54 | Balance: $97.46[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $119713.65 swept by $111165.07 at 2025-10-11 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $119713.65 swept by $110215.00 at 2025-10-11 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $119713.65 swept by $111525.14 at 2025-10-11 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $110215.00 swept by $109683.96 at 2025-10-11 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $110215.00 swept by $109687.46 at 2025-10-12 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $112464.27 at 2025-10-14 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $110127.00 at 2025-10-14 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $109945.86 at 2025-10-14 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $112065.45 at 2025-10-14 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $111793.73 at 2025-10-15 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $111747.77 at 2025-10-15 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113700.27 swept by $110185.87 at 2025-10-15 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $110185.87 swept by $108500.00 at 2025-10-16 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111905.84 swept by $112021.07 at 2025-10-16 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $110185.87 swept by $107464.53 at 2025-10-16 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $110185.87 swept by $107915.07 at 2025-10-17 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $103516.75 at 2025-10-17 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $104553.98 at 2025-10-17 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $106253.58 at 2025-10-17 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $106357.69 at 2025-10-18 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $106659.24 at 2025-10-18 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $106511.53 at 2025-10-18 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $106748.65 at 2025-10-18 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107464.53 swept by $106747.45 at 2025-10-19 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $107535.68 swept by $108278.93 at 2025-10-19 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $107535.68 swept by $109481.96 at 2025-10-19 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $107535.68 swept by $109499.00 at 2025-10-19 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $107535.68 swept by $111143.00 at 2025-10-20 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $107535.68 swept by $111685.23 at 2025-10-20 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $107535.68 swept by $111748.60 at 2025-10-20 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $109875.47 swept by $107444.60 at 2025-10-21 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $109875.47 swept by $107500.02 at 2025-10-21 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111748.60 swept by $114082.29 at 2025-10-21 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111748.60 swept by $112358.00 at 2025-10-21 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $109875.47 swept by $107891.00 at 2025-10-22 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107444.60 swept by $106800.00 at 2025-10-22 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $109875.47 swept by $107491.00 at 2025-10-22 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $106800.00 swept by $106639.00 at 2025-10-22 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $109188.27 swept by $110340.17 at 2025-10-23 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $109188.27 swept by $111342.60 at 2025-10-23 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $109188.27 swept by $111339.22 at 2025-10-23 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $111517.77 at 2025-10-24 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $111578.25 at 2025-10-24 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $112158.39 at 2025-10-24 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $109188.27 swept by $111174.00 at 2025-10-24 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $111479.00 at 2025-10-25 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $111864.00 at 2025-10-25 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $111968.52 at 2025-10-25 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111342.60 swept by $111709.55 at 2025-10-25 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $113500.00 at 2025-10-26 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $114054.85 at 2025-10-26 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $115542.00 at 2025-10-26 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $115680.48 at 2025-10-27 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $116410.06 at 2025-10-27 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $115732.32 at 2025-10-27 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $111968.52 swept by $115808.76 at 2025-10-27 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $115808.76 swept by $116114.13 at 2025-10-28 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113483.34 swept by $112203.00 at 2025-10-28 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113483.34 swept by $112075.00 at 2025-10-29 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $113483.34 swept by $112749.08 at 2025-10-29 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $112075.00 swept by $110934.56 at 2025-10-29 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $112075.00 swept by $109000.00 at 2025-10-29 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $112075.00 swept by $107924.01 at 2025-10-30 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $112075.00 swept by $109667.47 at 2025-10-30 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107924.01 swept by $106800.00 at 2025-10-30 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $107924.01 swept by $106279.33 at 2025-10-30 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $112075.00 swept by $108266.11 at 2025-10-31 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $112075.00 swept by $109045.43 at 2025-10-31 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $110493.52 swept by $110732.65 at 2025-11-02 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $110493.52 swept by $111187.66 at 2025-11-02 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $110493.52 swept by $111221.99 at 2025-11-02 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $110493.52 swept by $110729.40 at 2025-11-02 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $110493.52 swept by $110749.00 at 2025-11-03 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $108800.00 swept by $106726.69 at 2025-11-03 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $108800.00 swept by $105271.67 at 2025-11-03 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $108800.00 swept by $105793.99 at 2025-11-03 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $105271.67 swept by $104150.00 at 2025-11-04 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $105271.67 swept by $103535.15 at 2025-11-04 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $105271.67 swept by $100590.42 at 2025-11-04 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $105271.67 swept by $98892.97 at 2025-11-04 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $105271.67 swept by $98950.00 at 2025-11-05 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $105271.67 swept by $101157.77 at 2025-11-05 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $104029.77 at 2025-11-05 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $104550.00 at 2025-11-05 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $104191.19 at 2025-11-06 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $103582.19 at 2025-11-06 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $103577.60 at 2025-11-06 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $102472.27 at 2025-11-07 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102343.95 swept by $102462.96 at 2025-11-07 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102472.27 swept by $102648.39 at 2025-11-07 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102472.27 swept by $104041.99 at 2025-11-07 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102472.27 swept by $103350.00 at 2025-11-08 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102472.27 swept by $102628.60 at 2025-11-08 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102465.49 swept by $104200.00 at 2025-11-09 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102465.49 swept by $105471.04 at 2025-11-09 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102465.49 swept by $106653.00 at 2025-11-10 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102465.49 swept by $106599.00 at 2025-11-10 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102465.49 swept by $106575.05 at 2025-11-10 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $102465.49 swept by $106261.91 at 2025-11-10 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $106653.00 swept by $107482.00 at 2025-11-11 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $104627.49 swept by $102805.28 at 2025-11-11 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $104627.49 swept by $102422.43 at 2025-11-11 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $104627.49 swept by $102638.97 at 2025-11-12 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $104627.49 swept by $103050.01 at 2025-11-12 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $102422.43 swept by $101315.45 at 2025-11-12 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $102422.43 swept by $100803.20 at 2025-11-12 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $102422.43 swept by $100901.00 at 2025-11-13 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $99555.00 at 2025-11-13 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $97870.00 at 2025-11-13 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $96682.00 at 2025-11-14 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $95666.00 at 2025-11-14 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $94455.98 at 2025-11-14 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $93951.32 at 2025-11-14 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $100803.20 swept by $94222.20 at 2025-11-15 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $94770.00 swept by $93687.01 at 2025-11-16 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $94770.00 swept by $92943.83 at 2025-11-16 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $94770.00 swept by $93663.32 at 2025-11-17 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $92567.89 at 2025-11-17 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $91158.35 at 2025-11-17 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $89183.48 at 2025-11-18 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $89241.05 at 2025-11-18 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $90805.01 at 2025-11-18 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $92396.01 at 2025-11-18 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $92943.83 swept by $89955.55 at 2025-11-19 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $89955.55 swept by $88800.00 at 2025-11-19 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $89955.55 swept by $88483.12 at 2025-11-19 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $92358.27 swept by $93080.91 at 2025-11-20 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $92358.27 swept by $92775.36 at 2025-11-20 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $92358.27 swept by $92462.85 at 2025-11-20 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $88483.12 swept by $85980.70 at 2025-11-20 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $88483.12 swept by $85266.03 at 2025-11-21 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $88483.12 swept by $81385.97 at 2025-11-21 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $88483.12 swept by $80524.65 at 2025-11-21 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $88483.12 swept by $83224.00 at 2025-11-21 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $88483.12 swept by $83744.48 at 2025-11-22 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $85547.11 swept by $86814.82 at 2025-11-23 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $85547.11 swept by $86473.29 at 2025-11-23 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $86814.82 swept by $87455.00 at 2025-11-23 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $86814.82 swept by $87224.00 at 2025-11-23 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $87455.00 swept by $88019.06 at 2025-11-24 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $86814.82 swept by $87473.79 at 2025-11-24 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88019.06 swept by $88444.00 at 2025-11-24 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 209, timestamp 2025-11-24 14:45:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BEARISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: SHORT @ $85373.28
+  SL: $86860.42 (5M_SWING)
+  TP: $83971.56 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (STOP_LOSS): LOSS | P&L: $-1.72 | Balance: $95.74[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88019.06 swept by $89225.60 at 2025-11-24 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88019.06 swept by $88486.82 at 2025-11-25 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88019.06 swept by $88133.37 at 2025-11-25 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 423, timestamp 2025-11-25 08:35:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BEARISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: SHORT @ $87268.33
+  SL: $87853.27 (5M_SWING)
+  TP: $86770.71 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (TAKE_PROFIT): WIN | P&L: $0.14 | Balance: $95.88[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88019.06 swept by $88108.00 at 2025-11-25 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 543, timestamp 2025-11-25 18:35:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BEARISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: SHORT @ $87384.29
+  SL: $87939.45 (5M_SWING)
+  TP: $86916.55 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (TAKE_PROFIT): WIN | P&L: $0.03 | Balance: $95.91[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $87455.00 swept by $87855.98 at 2025-11-25 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88019.06 swept by $88188.00 at 2025-11-26 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $89954.99 at 2025-11-26 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 787, timestamp 2025-11-26 14:55:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BEARISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: SHORT @ $86820.87
+  SL: $87933.86 (5M_SWING)
+  TP: $85794.74 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (STOP_LOSS): LOSS | P&L: $-1.97 | Balance: $93.94[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $90399.74 at 2025-11-26 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $91880.00 at 2025-11-27 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 938, timestamp 2025-11-27 03:30:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BEARISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: SHORT @ $91074.28
+  SL: $91868.34 (5M_SWING)
+  TP: $90371.34 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (STOP_LOSS): LOSS | P&L: $-2.43 | Balance: $91.52[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $91925.40 at 2025-11-27 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 1032, timestamp 2025-11-27 11:20:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BEARISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: SHORT @ $91368.26
+  SL: $91826.70 (5M_SWING)
+  TP: $91001.24 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (TAKE_PROFIT): LOSS | P&L: $-0.50 | Balance: $91.02[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $91549.03 at 2025-11-27 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $91826.56 at 2025-11-27 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $88188.00 swept by $91699.81 at 2025-11-28 00:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $91826.56 swept by $91999.00 at 2025-11-28 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $91826.56 swept by $93161.86 at 2025-11-28 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90600.01 swept by $90426.40 at 2025-11-28 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90600.01 swept by $90323.68 at 2025-11-29 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90600.01 swept by $90449.28 at 2025-11-29 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90323.68 swept by $90200.00 at 2025-11-29 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90600.01 swept by $90480.01 at 2025-11-30 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $91199.99 swept by $91644.40 at 2025-11-30 06:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $91199.99 swept by $91980.80 at 2025-11-30 12:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m115[0m - [1m4H HIGH sweep detected: $91199.99 swept by $91625.54 at 2025-11-30 18:00:00+00:00 -> BEARISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90200.00 swept by $85595.76 at 2025-12-01 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90200.00 swept by $85973.06 at 2025-12-01 06:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $85595.76 swept by $83800.00 at 2025-12-01 12:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $85595.76 swept by $84590.82 at 2025-12-01 18:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 1334, timestamp 2025-12-01 18:55:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BULLISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: LONG @ $85231.57
+  SL: $84536.60 (5M_SWING)
+  TP: $85841.36 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (TAKE_PROFIT): WIN | P&L: $0.45 | Balance: $91.47[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_liquidity_sweep_4h[0m:[36m146[0m - [1m4H LOW sweep detected: $90200.00 swept by $86181.38 at 2025-12-02 00:00:00+00:00 -> BULLISH bias[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mdetect_5m_confluence[0m:[36m544[0m - [1mCONFLUENCE COMPLETE at index 1439, timestamp 2025-12-02 03:40:00+00:00: CHoCH → FVG → FVG_FILL → BOS (BULLISH)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mexecute_backtest_trade[0m:[36m750[0m - [1mBacktest trade EXECUTED: LONG @ $87005.63
+  SL: $86031.88 (5M_SWING)
+  TP: $87892.42 (R/R: 2.00:1)[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36m_close_backtest_trade[0m:[36m893[0m - [1mTrade CLOSED (TAKE_PROFIT): WIN | P&L: $0.85 | Balance: $92.31[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m1020[0m - [1m
+============================================================[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m1021[0m - [1mBACKTEST COMPLETE[0m
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36m__main__[0m:[36mrun_backtest[0m:[36m1022[0m - [1m============================================================[0m
+
+[ACCOUNT]
+  Starting Balance:  $100.00
+  Final Balance:     $92.31
+  Total P&L:         $-7.69
+  Total Return:      -7.69%
+
+[TRADES]
+  Total Trades:      9
+  Wins:              4 (44.44%)
+  Losses:            5
+  Breakevens:        0
+
+[WIN RATE]
+  Current:           44.44%
+  Target:            90%
+  Status:            ❌ Below target (45.56%)
+
+[P&L STATS]
+  Avg Win:           $0.37
+  Avg Loss:          $-1.83
+  Best Trade:        $0.85
+  Worst Trade:       $-2.54
+  Avg R/R Ratio:     2.00:1
+
+[TRADE HISTORY]
+
+  Trade #1:
+    Entry Day:       Sunday, 2025-11-23 13:35:00
+    Direction:       LONG
+    Entry Price:     $86,659.86
+    Exit Price:      $86,616.53
+    P&L:             $-2.54
+    Outcome:         LOSS
+    Exit Reason:     TRAILING_STOP
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #2:
+    Entry Day:       Monday, 2025-11-24 14:45:00
+    Direction:       SHORT
+    Entry Price:     $85,373.28
+    Exit Price:      $86,903.85
+    P&L:             $-1.72
+    Outcome:         LOSS
+    Exit Reason:     STOP_LOSS
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #3:
+    Entry Day:       Tuesday, 2025-11-25 08:35:00
+    Direction:       SHORT
+    Entry Price:     $87,268.33
+    Exit Price:      $86,141.51
+    P&L:             $0.14
+    Outcome:         WIN
+    Exit Reason:     TAKE_PROFIT
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #4:
+    Entry Day:       Tuesday, 2025-11-25 18:35:00
+    Direction:       SHORT
+    Entry Price:     $87,384.29
+    Exit Price:      $86,317.10
+    P&L:             $0.03
+    Outcome:         WIN
+    Exit Reason:     TAKE_PROFIT
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #5:
+    Entry Day:       Wednesday, 2025-11-26 14:55:00
+    Direction:       SHORT
+    Entry Price:     $86,820.87
+    Exit Price:      $87,977.83
+    P&L:             $-1.97
+    Outcome:         LOSS
+    Exit Reason:     STOP_LOSS
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #6:
+    Entry Day:       Thursday, 2025-11-27 03:30:00
+    Direction:       SHORT
+    Entry Price:     $91,074.28
+    Exit Price:      $91,914.27
+    P&L:             $-2.43
+    Outcome:         LOSS
+    Exit Reason:     STOP_LOSS
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #7:
+    Entry Day:       Thursday, 2025-11-27 11:20:00
+    Direction:       SHORT
+    Entry Price:     $91,368.26
+    Exit Price:      $90,496.62
+    P&L:             $-0.50
+    Outcome:         LOSS
+    Exit Reason:     TAKE_PROFIT
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #8:
+    Entry Day:       Monday, 2025-12-01 18:55:00
+    Direction:       LONG
+    Entry Price:     $85,231.57
+    Exit Price:      $86,578.22
+    P&L:             $0.45
+    Outcome:         WIN
+    Exit Reason:     TAKE_PROFIT
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+  Trade #9:
+    Entry Day:       Tuesday, 2025-12-02 03:40:00
+    Direction:       LONG
+    Entry Price:     $87,005.63
+    Exit Price:      $88,908.65
+    P&L:             $0.85
+    Outcome:         WIN
+    Exit Reason:     TAKE_PROFIT
+    Stop Source:     5M_SWING
+    R/R Ratio:       2.00:1
+
+============================================================
+[32m2025-12-12 13:10:25[0m | [1mINFO    [0m | [36mdatabase.connection[0m:[36mdisconnect[0m:[36m57[0m - [1mDatabase pool disconnected[0m
