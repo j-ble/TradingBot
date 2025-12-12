@@ -10,7 +10,7 @@ Usage:
 
 import asyncio
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
@@ -47,9 +47,9 @@ class Backtester:
     Strategy Rules:
     1. 4H liquidity sweep detection
     2. 5M confluence: CHoCH → FVG → FVG Fill → BOS
-    3. Swing-based stop loss (5M → 4H priority, 0.5%-3% from entry)
-    4. 1% fixed risk per trade
-    5. Minimum 2:1 R/R ratio
+    3. Swing-based stop loss at most recent 5M or 4H swing (no distance limit)
+    4. 1% fixed risk per trade (position sized accordingly)
+    5. R/R ratio: 1:1 minimum, 2:1 maximum
     """
 
     def __init__(self, starting_balance: Decimal = Decimal('100.00')):
@@ -481,10 +481,10 @@ class Backtester:
         bias: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Full 5M confluence detection: CHoCH → FVG → BOS (EXACT ORDER REQUIRED).
+        Full 5M confluence detection: CHoCH → FVG → FVG Fill → BOS (EXACT ORDER REQUIRED).
 
         This is the COMPLETE implementation matching your Node.js scanners.
-        All three patterns must occur in sequence within the search window.
+        All four patterns must occur in sequence within the search window.
 
         State Machine:
         1. WAITING_CHOCH: Looking for CHoCH break
@@ -696,24 +696,56 @@ class Backtester:
         # Calculate fees
         entry_fee = self.simulator.calculate_fee(position.usd)
 
+        # Calculate stop distance based on slipped entry price
+        stop_distance = abs(entry_price_slipped - stop_result['price'])
+
+        # Recalculate take profit based on slipped entry price to maintain R/R ratio
+        # Default to 2:1 R/R (will be capped if needed)
+        MIN_RR_RATIO = Decimal('1.0')
+        MAX_RR_RATIO = Decimal('2.0')
+
+        # Calculate TP at 2:1 R/R (maximum)
+        tp_distance = stop_distance * MAX_RR_RATIO
+
+        if direction == 'LONG':
+            take_profit = entry_price_slipped + tp_distance
+        else:  # SHORT
+            take_profit = entry_price_slipped - tp_distance
+
         # Create trade record
         trade = {
             'entry_time': entry_time,
             'direction': direction,
             'entry_price': entry_price_slipped,
             'stop_loss': stop_result['price'],
-            'take_profit': stop_result['min_tp'],
+            'take_profit': take_profit,
             'position_size_btc': position.btc,
             'position_size_usd': position.usd,
             'risk_amount': position.risk_amount,
             'stop_loss_source': stop_result['source'],
             'entry_fee': entry_fee,
-            'stop_distance': abs(entry_price_slipped - stop_result['price']),
-            'target_distance': abs(stop_result['min_tp'] - entry_price_slipped)
+            'stop_distance': stop_distance,
+            'target_distance': abs(take_profit - entry_price_slipped)
         }
 
         # Calculate R/R
         trade['rr_ratio'] = trade['target_distance'] / trade['stop_distance']
+
+        # Validate R/R ratio is between 1:1 and 2:1
+        MIN_RR_RATIO = Decimal('1.0')
+        MAX_RR_RATIO = Decimal('2.0')
+        if trade['rr_ratio'] < MIN_RR_RATIO:
+            logger.warning(
+                f"Trade REJECTED: R/R ratio {trade['rr_ratio']:.2f}:1 < {MIN_RR_RATIO}:1 "
+                f"(minimum required) at {entry_time}"
+            )
+            return None
+        if trade['rr_ratio'] > MAX_RR_RATIO:
+            logger.warning(
+                f"Trade REJECTED: R/R ratio {trade['rr_ratio']:.2f}:1 > {MAX_RR_RATIO}:1 "
+                f"(maximum allowed) at {entry_time}"
+            )
+            return None
 
         logger.info(
             f"Backtest trade EXECUTED: {direction} @ ${entry_price_slipped:.2f}\n"
@@ -1004,7 +1036,8 @@ class Backtester:
                 'best_trade': Decimal('0'),
                 'worst_trade': Decimal('0'),
                 'avg_rr_ratio': 0.0,
-                'final_balance': self.current_balance
+                'final_balance': self.current_balance,
+                'trades': []
             }
 
         wins = [t for t in self.trades if t.outcome == 'WIN']
@@ -1098,7 +1131,7 @@ async def main():
     end_date = None
 
     if args.days:
-        end_date = datetime.utcnow().replace(tzinfo=None)
+        end_date = datetime.now(timezone.utc).replace(tzinfo=None)
         start_date = end_date - timedelta(days=args.days)
     elif args.start:
         start_date = datetime.strptime(args.start, '%Y-%m-%d')

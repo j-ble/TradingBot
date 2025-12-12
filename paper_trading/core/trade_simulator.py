@@ -28,9 +28,8 @@ class StopLossConfig:
     """Stop loss calculation constants - matches Node.js CONFIG"""
     BUFFER_BELOW_LOW = Decimal('0.002')      # 0.2% for LONG
     BUFFER_ABOVE_HIGH = Decimal('0.003')     # 0.3% for SHORT
-    MIN_STOP_DISTANCE_PERCENT = Decimal('0.5')   # 0.5%
-    MAX_STOP_DISTANCE_PERCENT = Decimal('3.0')   # 3.0%
-    MIN_RR_RATIO = Decimal('2.0')            # 2:1 minimum
+    MIN_RR_RATIO = Decimal('1.0')            # 1:1 minimum
+    MAX_RR_RATIO = Decimal('2.0')            # 2:1 maximum
 
 
 class TradeSimulator:
@@ -101,7 +100,7 @@ class TradeSimulator:
         stop_price: Decimal
     ) -> Dict[str, Any]:
         """
-        Validate stop loss distance is within constraints.
+        Validate stop loss (no distance constraints - accept any swing level).
 
         Args:
             entry_price: Entry price
@@ -112,30 +111,11 @@ class TradeSimulator:
         """
         distance_percent = self.calculate_distance_percent(entry_price, stop_price)
 
-        if distance_percent < self.config.MIN_STOP_DISTANCE_PERCENT:
-            return {
-                'valid': False,
-                'distance': distance_percent,
-                'reason': (
-                    f"Stop too close: {distance_percent:.2f}% < "
-                    f"{self.config.MIN_STOP_DISTANCE_PERCENT}%"
-                )
-            }
-
-        if distance_percent > self.config.MAX_STOP_DISTANCE_PERCENT:
-            return {
-                'valid': False,
-                'distance': distance_percent,
-                'reason': (
-                    f"Stop too far: {distance_percent:.2f}% > "
-                    f"{self.config.MAX_STOP_DISTANCE_PERCENT}%"
-                )
-            }
-
+        # No distance constraints - any swing level is valid
         return {
             'valid': True,
             'distance': distance_percent,
-            'reason': 'Stop distance within constraints'
+            'reason': 'Stop at swing level (no distance constraints)'
         }
 
     def is_stop_on_correct_side(
@@ -168,7 +148,7 @@ class TradeSimulator:
         direction: str
     ) -> Decimal:
         """
-        Calculate minimum take profit for 2:1 R/R ratio.
+        Calculate minimum take profit for 1:1 R/R ratio (will be capped at 2:1 max).
 
         Args:
             entry_price: Entry price
@@ -176,7 +156,7 @@ class TradeSimulator:
             direction: 'LONG' or 'SHORT'
 
         Returns:
-            Minimum take profit price
+            Minimum take profit price (1:1 R/R)
         """
         stop_distance = abs(entry_price - stop_price)
         target_distance = stop_distance * self.config.MIN_RR_RATIO

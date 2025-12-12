@@ -341,6 +341,169 @@ btc-trading-bot/
 **Tertiary**: 99%+ system uptime
 **Quaternary**: Fully autonomous operation
 
+## MCP Skills & Dynamic Tool Loading
+
+### Overview
+
+This project uses Model Context Protocol (MCP) servers to extend Claude's capabilities with specialized tools. MCP servers are organized into **skills** that can be loaded progressively to manage context usage efficiently.
+
+### Agent Skills Structure
+
+Skills are organized in `.claude/skills/` directory with individual SKILL.md files:
+
+```
+.claude/skills/
+├── github-integration/     # Repository management, PRs, issues, code search
+├── brave-search/           # Web, news, image, video search
+├── browser-automation/     # Playwright-based browser control
+├── git-ops/                # Local Git operations
+├── developer-docs/         # Context7 library documentation
+├── content-processing/     # Web content fetching and markdown conversion
+└── mcp-management/         # Dynamic MCP server loading
+```
+
+See `SKILLS.md` for comprehensive reference of all available MCP tools.
+
+### MCP Configuration
+
+**Configuration Location**: `~/.docker/mcp/registry.yaml`
+
+**Auto-Loaded Servers** (essential tools):
+- `brave` - Web search and research
+- `context7` - Developer documentation
+- `fetch` & `markitdown` - Content processing
+- `git` - Local version control
+- `github-official` - GitHub API (full toolset)
+- `playwright` - Browser automation
+
+**On-Demand Servers** (load when needed):
+- `postgres` - PostgreSQL database tools
+  - Load with: `mcp-add postgres --activate`
+  - Use for: Database schema work, query optimization
+  - Token cost: ~5-10k tokens
+
+**Excluded Servers** (not used in this project):
+- `openzeppelin-solidity` - Solidity smart contracts (not applicable)
+- `youtube_transcript` - Video transcripts (not needed)
+
+### Dynamic Loading Workflow
+
+Use MCP Management tools to load servers on-demand:
+
+```bash
+# Discover available servers
+mcp-find query="postgres"
+
+# Load server when needed
+mcp-add postgres --activate
+
+# PostgreSQL tools now available for database work
+
+# Remove server when done (optional)
+mcp-remove postgres
+```
+
+### When to Load postgres Server
+
+Load PostgreSQL tools dynamically when:
+- Designing or modifying database schema (`database/schema.sql`)
+- Writing complex SQL queries for candles, trades, or swing levels
+- Optimizing query performance for time-series data
+- Debugging database connection issues
+- Analyzing data for backtesting
+
+**Benefit**: Saves 5-10k tokens when not working with database.
+
+### Skills Documentation
+
+Each skill directory contains:
+- **YAML Frontmatter**: Name and description (loaded at startup)
+- **Skill Content**: Detailed documentation (loaded when relevant)
+- **Use Cases**: Trading bot-specific examples
+- **Best Practices**: Security, performance, integration tips
+
+### Progressive Disclosure Pattern
+
+Claude loads MCP skills in three levels:
+1. **Level 1 (Startup)**: Skill names and descriptions from YAML frontmatter
+2. **Level 2 (On-Demand)**: Full SKILL.md content when skill is relevant
+3. **Level 3 (Optional)**: Additional linked files if needed (not yet implemented)
+
+This approach keeps context usage efficient while maintaining full capability access.
+
+### Token Usage Optimization
+
+**Before Optimization** (all tools loaded):
+- MCP tools: ~80k tokens (40% of 200k context)
+- System prompt + other: ~40k tokens
+- Free space: ~80k tokens
+
+**After Optimization** (selective loading):
+- Essential MCP tools: ~60k tokens (30%)
+- On-demand tools: Load as needed (+5-10k when active)
+- Free space: ~120k tokens (60%)
+
+### Common MCP Workflows for Trading Bot
+
+#### Research Trading Strategies
+```
+1. brave_web_search: "liquidity sweep detection algorithm"
+2. fetch: Extract top articles as markdown
+3. Analyze patterns and document insights
+```
+
+#### Find Code Examples
+```
+1. search_code: "FVG detection language:python"
+2. get_file_contents: Read implementation
+3. Adapt for trading bot
+```
+
+#### Database Development
+```
+1. mcp-add postgres --activate
+2. Design schema for new table
+3. Test queries
+4. mcp-remove postgres (when done)
+```
+
+#### API Documentation
+```
+1. resolve-library-id: "coinbase"
+2. get-library-docs: /coinbase/advanced-trade with topic="orders"
+3. Implement order execution logic
+```
+
+#### Dashboard Testing
+```
+1. browser_navigate: http://localhost:3000
+2. browser_click: Test user interactions
+3. browser_console_messages: Check for errors
+4. browser_take_screenshot: Document UI
+```
+
+### Best Practices
+
+1. **Essential vs Optional**: Auto-load frequently used tools, load others on-demand
+2. **Task-Based Loading**: Load postgres only during database work
+3. **Skill Reference**: Check `.claude/skills/` or `SKILLS.md` before using tools
+4. **Token Awareness**: Monitor context usage with `/context` command
+5. **Security First**: Only use browser automation on trusted URLs (localhost, docs)
+
+### Modifying MCP Configuration
+
+**Backup Location**: `~/.docker/mcp/registry.yaml.backup`
+
+To add/remove auto-loaded servers:
+1. Edit `~/.docker/mcp/registry.yaml`
+2. Add or remove server entries under `registry:`
+3. Restart Claude Code to apply changes
+
+To restore original configuration:
+```bash
+cp ~/.docker/mcp/registry.yaml.backup ~/.docker/mcp/registry.yaml
+```
+
 ## Warning: Risk Disclosure
 
 This bot trades with real capital. Risks include market volatility, execution slippage, API failures, AI decision errors, and liquidation risk with leverage. Always start with micro capital, monitor closely, and keep emergency stop accessible.
