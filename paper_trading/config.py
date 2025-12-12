@@ -27,6 +27,7 @@ class Config:
     # Trading Parameters
     STARTING_BALANCE = Decimal(os.getenv('ACCOUNT_BALANCE', '10000'))
     RISK_PER_TRADE = Decimal(os.getenv('RISK_PER_TRADE', '0.01'))  # 1%
+    RISK_PERCENT = Decimal('0.01')  # 1% (alias for RISK_PER_TRADE)
     MIN_RR_RATIO = Decimal('2.0')  # Minimum 2:1 risk/reward
 
     # Stop Loss Constraints (from Node.js stop_loss_calculator.js)
@@ -37,10 +38,12 @@ class Config:
 
     # Slippage & Fees
     SLIPPAGE_MODEL = 'FIXED'  # FIXED, VOLUME_BASED, or NONE
-    FIXED_SLIPPAGE_PERCENT = Decimal('0.05')  # 0.05% (5 basis points)
+    FIXED_SLIPPAGE_PERCENT = Decimal('0.0005')  # 0.05% (5 basis points)
+    SLIPPAGE_PERCENT = Decimal('0.0005')  # 0.05% (alias for FIXED_SLIPPAGE_PERCENT)
     INCLUDE_FEES = True
-    TAKER_FEE_PERCENT = Decimal('0.60')  # 0.60%
-    MAKER_FEE_PERCENT = Decimal('0.40')  # 0.40%
+    TAKER_FEE_PERCENT = Decimal('0.006')  # 0.60%
+    MAKER_FEE_PERCENT = Decimal('0.004')  # 0.40%
+    FEE_PERCENT = Decimal('0.006')  # 0.60% taker fee (for calculate_fee)
 
     # Risk Management
     MAX_POSITIONS = 1

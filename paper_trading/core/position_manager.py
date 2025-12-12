@@ -318,7 +318,7 @@ class PositionManager:
                 pnl_usd=net_pnl,
                 outcome=outcome,
                 close_reason=reason,
-                exit_slippage_percent=config.SLIPPAGE_PERCENT * Decimal('100'),
+                exit_slippage_percent=config.FIXED_SLIPPAGE_PERCENT * Decimal('100'),
                 exit_fee_usd=exit_fee
             )
 

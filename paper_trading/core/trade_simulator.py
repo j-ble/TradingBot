@@ -358,9 +358,10 @@ class TradeSimulator:
         )
 
         return PositionSize(
-            position_btc=position_btc,
-            position_usd=position_usd,
+            btc=position_btc,
+            usd=position_usd,
             risk_amount=risk_amount,
+            stop_distance=stop_distance,
             stop_distance_percent=stop_distance_percent
         )
 
@@ -381,7 +382,7 @@ class TradeSimulator:
         Returns:
             Filled price after slippage
         """
-        slippage_percent = config.SLIPPAGE_PERCENT  # 0.05%
+        slippage_percent = config.FIXED_SLIPPAGE_PERCENT  # 0.05%
 
         if is_entry:
             # Entry: Always worse
@@ -504,14 +505,14 @@ class TradeSimulator:
                 'entry_price': entry_price_with_slippage,
                 'stop_loss': stop_result.price,
                 'take_profit': take_profit,
-                'position_size_btc': position.position_btc,
-                'position_size_usd': position.position_usd,
+                'position_size_btc': position.btc,
+                'position_size_usd': position.usd,
                 'risk_amount_usd': position.risk_amount,
                 'risk_reward_ratio': rr_ratio,
                 'stop_loss_source': stop_result.source,
                 'stop_loss_swing_price': stop_result.swing_price,
                 'stop_loss_distance_percent': stop_result.distance_percent,
-                'entry_slippage_percent': config.SLIPPAGE_PERCENT * Decimal('100'),
+                'entry_slippage_percent': config.FIXED_SLIPPAGE_PERCENT * Decimal('100'),
                 'entry_fee_usd': entry_fee
             }
 
@@ -519,7 +520,7 @@ class TradeSimulator:
 
             logger.info(
                 f"Paper trade #{trade_id} EXECUTED: {direction} "
-                f"{position.position_btc:.8f} BTC @ ${entry_price_with_slippage:.2f}\n"
+                f"{position.btc:.8f} BTC @ ${entry_price_with_slippage:.2f}\n"
                 f"  SL: ${stop_result.price:.2f} ({stop_result.source})\n"
                 f"  TP: ${take_profit:.2f} (R/R: {rr_ratio:.2f}:1)\n"
                 f"  Risk: ${position.risk_amount:.2f} (1%)\n"
