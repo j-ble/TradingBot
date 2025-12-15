@@ -6,24 +6,24 @@ import CoinbaseClient from '../lib/coinbase/client.js';
 async function main() {
     const client = new CoinbaseClient();
     const productId = 'BTC-USDC';
-    // Coinbase doesn't natively support 4H, so we fetch 1H and aggregate
-    const granularity = '1H';
+    // Fetch 5M candles directly
+    const granularity = '5M';
 
-    // Fetch last 180 days
+    // Fetch last 90 days
     const now = new Date();
-    const daysToFetch = 180;
+    const daysToFetch = 90;
     const startDate = new Date(now.getTime() - daysToFetch * 24 * 60 * 60 * 1000);
 
     console.log(`Starting data fetch for ${productId}`);
     console.log(`Time range: ${startDate.toISOString()} to ${now.toISOString()}`);
-    console.log(`Strategy: Fetch 1H candles and aggregate to 4H`);
+    console.log(`Strategy: Fetch 5M candles`);
 
-    // Container for all 1H candles
+    // Container for all candles
     let allCandles = [];
 
     // Coinbase allows max 300 candles per request. 
-    // 300 hours is ~12.5 days.
-    const CHUNK_HOURS = 300;
+    // 300 * 5 mins = 1500 mins = 25 hours.
+    const CHUNK_HOURS = 24;
     let currentEnd = now;
 
     while (currentEnd > startDate) {
@@ -60,7 +60,7 @@ async function main() {
         }
     }
 
-    console.log(`\nTotal 1H candles fetched: ${allCandles.length}`);
+    console.log(`\nTotal 5M candles fetched: ${allCandles.length}`);
 
     if (allCandles.length === 0) {
         console.log("No data fetched. Exiting.");
@@ -80,106 +80,26 @@ async function main() {
             uniqueCandles.push(c);
         }
     }
-    console.log(`Unique 1H candles: ${uniqueCandles.length}`);
+    console.log(`Unique 5M candles: ${uniqueCandles.length}`);
 
-    // 3. Aggregate to 4H
-    console.log("Aggregating to 4H candles...");
-    const aggregated = aggregateToFourHour(uniqueCandles);
-    console.log(`Generated ${aggregated.length} 4H candles`);
-
-    // 4. Save to CSV
+    // 3. Save to CSV
     const outputDir = path.join(process.cwd(), 'historyBot', 'data');
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const csvPath = path.join(outputDir, 'btc_usdc_4h.csv');
+    const csvPath = path.join(outputDir, 'btc_usdc_5m.csv');
 
     // CSV Header
     let csvContent = 'timestamp,open,high,low,close,volume\n';
 
     // CSV Rows
-    for (const c of aggregated) {
+    for (const c of uniqueCandles) {
         csvContent += `${c.timestamp.toISOString()},${c.open},${c.high},${c.low},${c.close},${c.volume}\n`;
     }
 
     fs.writeFileSync(csvPath, csvContent);
     console.log(`\nData saved successfully to: ${csvPath}`);
-}
-
-/**
- * Aggregates 1H candles into 4H candles
- * @param {Array} candles - Sorted array of 1H candles
- */
-function aggregateToFourHour(candles) {
-    const result = [];
-    let buffer = [];
-
-    // Helper to get 4H bucket timestamp for a candle
-    const getBucket = (date) => {
-        const ts = date.getTime() / 1000; // seconds
-        // Round down to nearest 4H block (4 * 3600 = 14400)
-        const bucketTs = Math.floor(ts / 14400) * 14400;
-        return bucketTs;
-    };
-
-    let currentBucket = null;
-
-    for (const candle of candles) {
-        const bucket = getBucket(candle.timestamp);
-
-        if (currentBucket === null) {
-            currentBucket = bucket;
-        }
-
-        if (bucket !== currentBucket) {
-            // Flush buffer if we have data and moved to a new bucket
-            if (buffer.length > 0) {
-                result.push(buildCandle(buffer, currentBucket));
-            }
-
-            // Start new bucket
-            buffer = [candle];
-            currentBucket = bucket;
-        } else {
-            // Add to current bucket
-            buffer.push(candle);
-        }
-    }
-
-    // Flush final buffer
-    if (buffer.length > 0) {
-        result.push(buildCandle(buffer, currentBucket));
-    }
-
-    return result;
-}
-
-function buildCandle(buffer, bucketTimestamp) {
-    // Sort buffer just in case
-    buffer.sort((a, b) => a.timestamp - b.timestamp);
-
-    const open = buffer[0].open;
-    const close = buffer[buffer.length - 1].close;
-
-    let high = buffer[0].high;
-    let low = buffer[0].low;
-    let volume = 0;
-
-    for (const c of buffer) {
-        if (c.high > high) high = c.high;
-        if (c.low < low) low = c.low;
-        volume += c.volume;
-    }
-
-    return {
-        timestamp: new Date(bucketTimestamp * 1000),
-        open,
-        high,
-        low,
-        close,
-        volume
-    };
 }
 
 main().catch(console.error);
