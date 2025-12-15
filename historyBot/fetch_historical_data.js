@@ -6,34 +6,29 @@ import CoinbaseClient from '../lib/coinbase/client.js';
 async function main() {
     const client = new CoinbaseClient();
     const productId = 'BTC-USD';
-    // Fetch 5m candles directly
-    const granularity = '5m';
+    // Fetch 1m candles directly
+    const granularity = '1m';
 
-    // Fetch last 180 days (6 months)
+    // Fetch last 60 days (2 months)
     const now = new Date();
-    const daysToFetch = 180;
+    const daysToFetch = 60;
     const startDate = new Date(now.getTime() - daysToFetch * 24 * 60 * 60 * 1000);
 
     console.log(`Starting data fetch for ${productId}`);
     console.log(`Time range: ${startDate.toISOString()} to ${now.toISOString()}`);
-    console.log(`Strategy: Fetch 5m candles`);
+    console.log(`Strategy: Fetch 1m candles`);
 
     // Container for all candles
     let allCandles = [];
 
     // Coinbase allows max 300 candles per request. 
-    // 300 * 5 minutes = 1500 minutes = 25 hours.
-    const CHUNK_HOURS = 25;
+    // 300 * 1 minute = 300 minutes = 5 hours.
+    const CHUNK_HOURS = 5;
     let currentEnd = now;
 
     while (currentEnd > startDate) {
         // Calculate start of this chunk
         let currentStart = new Date(currentEnd.getTime() - CHUNK_HOURS * 60 * 60 * 1000);
-
-        // Don't go past the global start date
-        if (currentStart < startDate) {
-            currentStart = startDate;
-        }
 
         console.log(`Fetching chunk: ${currentStart.toISOString()} -> ${currentEnd.toISOString()}`);
 
@@ -60,7 +55,7 @@ async function main() {
         }
     }
 
-    console.log(`\nTotal 5m candles fetched: ${allCandles.length}`);
+    console.log(`\nTotal 1m candles fetched: ${allCandles.length}`);
 
     if (allCandles.length === 0) {
         console.log("No data fetched. Exiting.");
@@ -80,7 +75,7 @@ async function main() {
             uniqueCandles.push(c);
         }
     }
-    console.log(`Unique 5m candles: ${uniqueCandles.length}`);
+    console.log(`Unique 1m candles: ${uniqueCandles.length}`);
 
     // 3. Save to CSV
     const outputDir = path.join(process.cwd(), 'historyBot', 'data');
@@ -88,7 +83,7 @@ async function main() {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const csvPath = path.join(outputDir, 'btc_usd_5m.csv');
+    const csvPath = path.join(outputDir, 'btc_usd_1m.csv');
 
     // CSV Header
     let csvContent = 'timestamp,open,high,low,close,volume\n';
