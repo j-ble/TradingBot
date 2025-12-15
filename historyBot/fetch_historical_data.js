@@ -5,25 +5,25 @@ import CoinbaseClient from '../lib/coinbase/client.js';
 
 async function main() {
     const client = new CoinbaseClient();
-    const productId = 'BTC-USDC';
-    // Fetch 5M candles directly
-    const granularity = '5M';
+    const productId = 'BTC-USD';
+    // Fetch 4H candles directly
+    const granularity = '4H';
 
-    // Fetch last 90 days
+    // Fetch last 730 days (24 months)
     const now = new Date();
-    const daysToFetch = 90;
+    const daysToFetch = 730;
     const startDate = new Date(now.getTime() - daysToFetch * 24 * 60 * 60 * 1000);
 
     console.log(`Starting data fetch for ${productId}`);
     console.log(`Time range: ${startDate.toISOString()} to ${now.toISOString()}`);
-    console.log(`Strategy: Fetch 5M candles`);
+    console.log(`Strategy: Fetch 4H candles`);
 
     // Container for all candles
     let allCandles = [];
 
     // Coinbase allows max 300 candles per request. 
-    // 300 * 5 mins = 1500 mins = 25 hours.
-    const CHUNK_HOURS = 24;
+    // 300 * 4 hours = 1200 hours.
+    const CHUNK_HOURS = 1000;
     let currentEnd = now;
 
     while (currentEnd > startDate) {
@@ -60,7 +60,7 @@ async function main() {
         }
     }
 
-    console.log(`\nTotal 5M candles fetched: ${allCandles.length}`);
+    console.log(`\nTotal 4H candles fetched: ${allCandles.length}`);
 
     if (allCandles.length === 0) {
         console.log("No data fetched. Exiting.");
@@ -80,7 +80,7 @@ async function main() {
             uniqueCandles.push(c);
         }
     }
-    console.log(`Unique 5M candles: ${uniqueCandles.length}`);
+    console.log(`Unique 4H candles: ${uniqueCandles.length}`);
 
     // 3. Save to CSV
     const outputDir = path.join(process.cwd(), 'historyBot', 'data');
@@ -88,7 +88,7 @@ async function main() {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const csvPath = path.join(outputDir, 'btc_usdc_5m.csv');
+    const csvPath = path.join(outputDir, 'btc_usd_4h.csv');
 
     // CSV Header
     let csvContent = 'timestamp,open,high,low,close,volume\n';
