@@ -1,0 +1,296 @@
+{
+  "name": "Phase 0 System Check",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "cronExpression": "0 14 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily at 7:00 AM Phoenix (14:00 UTC)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "id": "trigger-daily"
+    },
+    {
+      "parameters": {
+        "path": "phase0-check",
+        "method": "POST",
+        "responseMode": "responseNode"
+      },
+      "name": "Manual Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 450],
+      "id": "trigger-webhook",
+      "webhookId": "phase0-system-check"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Execute verification script\nconst { exec } = require('child_process');\nconst util = require('util');\nconst execPromise = util.promisify(exec);\n\ntry {\n  const scriptPath = '/Users/ble/TradingBot/historyBot/scripts/verify_environment.js';\n  const { stdout, stderr } = await execPromise(`cd /Users/ble/TradingBot/historyBot && node ${scriptPath}`);\n  \n  if (stderr && !stderr.includes('DeprecationWarning')) {\n    console.warn('Script stderr:', stderr);\n  }\n  \n  const results = JSON.parse(stdout);\n  return { json: results };\n} catch (error) {\n  // Script failed or returned non-zero exit code\n  console.error('Phase 0 script failed:', error.message);\n  \n  // Try to parse stdout if it exists (script may have returned JSON before failing)\n  if (error.stdout) {\n    try {\n      const results = JSON.parse(error.stdout);\n      return { json: results };\n    } catch (parseErr) {\n      // Failed to parse, return error object\n    }\n  }\n  \n  return {\n    json: {\n      overall: 'FAIL',\n      timestamp: new Date().toISOString(),\n      error: error.message,\n      checks: [{\n        name: 'Script Execution',\n        status: 'FAIL',\n        detail: error.message\n      }]\n    }\n  };\n}"
+      },
+      "name": "Run Verification Script",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 375],
+      "id": "run-script"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.overall }}",
+              "value2": "FAIL",
+              "operation": "notEqual"
+            }
+          ]
+        }
+      },
+      "name": "All Checks Passed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 375],
+      "id": "check-overall"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Update or insert system state to enable trading\nINSERT INTO system_state (id, ready_for_trading, last_phase0_check, phase0_status, updated_at)\nVALUES (1, true, NOW(), 'PASS', NOW())\nON CONFLICT (id)\nDO UPDATE SET\n  ready_for_trading = true,\n  last_phase0_check = NOW(),\n  phase0_status = 'PASS',\n  updated_at = NOW();",
+        "options": {}
+      },
+      "name": "Enable Trading (PASS)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [850, 250],
+      "id": "enable-trading",
+      "credentials": {
+        "postgres": {
+          "id": "postgres-trading-bot",
+          "name": "PostgreSQL - Trading Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Update or insert system state to disable trading\nINSERT INTO system_state (id, ready_for_trading, last_phase0_check, phase0_status, updated_at)\nVALUES (1, false, NOW(), 'FAIL', NOW())\nON CONFLICT (id)\nDO UPDATE SET\n  ready_for_trading = false,\n  last_phase0_check = NOW(),\n  phase0_status = 'FAIL',\n  updated_at = NOW();",
+        "options": {}
+      },
+      "name": "Disable Trading (FAIL)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [850, 500],
+      "id": "disable-trading",
+      "credentials": {
+        "postgres": {
+          "id": "postgres-trading-bot",
+          "name": "PostgreSQL - Trading Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=✅ *PHASE 0 COMPLETE - SYSTEM READY*\n\n{{ $json.checks.filter(c => c.status === 'PASS').map(c => `✓ ${c.name}: ${c.detail}`).join('\\n') }}\n\n{{ $json.checks.filter(c => c.status === 'WARN').map(c => `⚠️ ${c.name}: ${c.detail}`).join('\\n') }}\n\n⏰ Timestamp: {{ $json.timestamp }}\n\n➡️ _All trading workflows now ENABLED for today_",
+        "additionalFields": {
+          "parseMode": "Markdown"
+        }
+      },
+      "name": "Send Success Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1050, 250],
+      "id": "telegram-success",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "=🚨 *PHASE 0 FAILED - TRADING DISABLED*\n\n❌ *Failed Checks:*\n{{ $json.checks.filter(c => c.status === 'FAIL').map(c => `• ${c.name}: ${c.detail}`).join('\\n') }}\n\n{{ $json.checks.filter(c => c.status === 'WARN').length > 0 ? '⚠️ *Warnings:*\\n' + $json.checks.filter(c => c.status === 'WARN').map(c => `• ${c.name}: ${c.detail}`).join('\\n') : '' }}\n\n⏰ Timestamp: {{ $json.timestamp }}\n\n🛑 _All trading workflows DISABLED until issues resolved_\n\n*Action Required:* Review failures and run Phase 0 again",
+        "additionalFields": {
+          "parseMode": "Markdown"
+        }
+      },
+      "name": "Send Failure Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1050, 500],
+      "id": "telegram-failure",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot",
+          "name": "Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}"
+      },
+      "name": "Webhook Response (PASS)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 250],
+      "id": "webhook-response-pass"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "responseCode": 503
+        }
+      },
+      "name": "Webhook Response (FAIL)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 500],
+      "id": "webhook-response-fail"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Log Phase 0 execution\nINSERT INTO system_logs (type, message, details, timestamp)\nVALUES (\n  '{{ $json.overall === \"PASS\" || $json.overall === \"PASS_WITH_WARNINGS\" ? \"INFO\" : \"ERROR\" }}',\n  'Phase 0 System Check: {{ $json.overall }}',\n  '{{ JSON.stringify($json.checks) }}',\n  NOW()\n);",
+        "options": {}
+      },
+      "name": "Log Execution",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [850, 375],
+      "id": "log-execution",
+      "credentials": {
+        "postgres": {
+          "id": "postgres-trading-bot",
+          "name": "PostgreSQL - Trading Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily at 08:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Run Verification Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Run Verification Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Verification Script": {
+      "main": [
+        [
+          {
+            "node": "All Checks Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "All Checks Passed?": {
+      "main": [
+        [
+          {
+            "node": "Enable Trading (PASS)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Disable Trading (FAIL)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enable Trading (PASS)": {
+      "main": [
+        [
+          {
+            "node": "Send Success Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disable Trading (FAIL)": {
+      "main": [
+        [
+          {
+            "node": "Send Failure Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Success Notification": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response (PASS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Failure Alert": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response (FAIL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 2,
+  "updatedAt": "2025-12-17T00:00:00.000Z",
+  "versionId": "1"
+}

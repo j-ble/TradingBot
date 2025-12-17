@@ -1,0 +1,23 @@
+{
+    "name": "trading-bot-n8n-integration",
+    "version": "1.0.0",
+    "description": "Automated trading bot with n8n workflows and Coinbase API integration",
+    "main": "index.js",
+    "scripts": {
+        "test:connection": "node scripts/test_coinbase_connection.js",
+        "verify:env": "node scripts/verify_environment.js"
+    },
+    "keywords": [
+        "trading",
+        "n8n",
+        "coinbase",
+        "automation"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "jsonwebtoken": "^9.0.2",
+        "pg": "^8.13.1"
+    }
+}
