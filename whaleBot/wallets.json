@@ -1,0 +1,41 @@
+{
+  "solana": [
+    {
+      "address": "52kPsnhTpjHZucGUQy4YDm8g9ykXPMC47iNVSVRscikb",
+      "name": "SOL Whale #1",
+      "description": "Whale wallet with $200k+ portfolio",
+      "enabled": true,
+      "notes": "Large wallet - monitoring for early token discoveries"
+    },
+    {
+      "address": "gtagyESa99t49VmUqnnfsuowYnigSNKuYXdXWyXWNdd",
+      "name": "SOL Whale #2",
+      "description": "Whale wallet with $200k+ portfolio",
+      "enabled": true,
+      "notes": "Large wallet - monitoring for early token discoveries"
+    }
+  ],
+  "ethereum": [],
+  "bsc": [],
+  "base": [],
+  "notes": [
+    "HOW TO FIND WHALE WALLETS:",
+    "1. Go to DexScreener and find a token that did 10x-50x recently",
+    "2. Look at the 'Top Traders' section on that token's page",
+    "3. Find wallets that bought early (within first hour) and sold at peak",
+    "4. Check their wallet history on blockchain explorer (Solscan/Etherscan)",
+    "5. If they have multiple 5x-50x wins, add them here",
+    "",
+    "EXAMPLE SOURCES:",
+    "- DexScreener top traders on successful tokens",
+    "- Solscan 'Top Holders' of tokens that pumped",
+    "- Twitter/X crypto traders who share their wallet addresses",
+    "- Bubblemaps whale detection",
+    "",
+    "TIPS:",
+    "- Look for wallets with 60%+ win rate on new tokens",
+    "- Avoid wallets that hold tokens for months (we want snipers/scalpers)",
+    "- Best whales buy within first 1-24 hours and sell within 1-7 days",
+    "- Track 5-10 wallets to start, add more as you find proven ones"
+  ]
+}

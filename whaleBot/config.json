@@ -1,0 +1,43 @@
+{
+  "scanner": {
+    "interval_seconds": 60,
+    "transaction_lookback_count": 10,
+    "alert_cooldown_minutes": 60,
+    "enabled_chains": ["solana"]
+  },
+  "safety_thresholds": {
+    "min_liquidity_usd": 50000,
+    "min_token_age_minutes": 30,
+    "max_token_age_hours": 48,
+    "min_whale_buy_usd": 500,
+    "risk_score_min": 4
+  },
+  "alerts": {
+    "show_new_tokens_only": true,
+    "show_position_increases": false,
+    "min_position_increase_multiplier": 2.0,
+    "show_whale_sells": false
+  },
+  "display": {
+    "show_banner": true,
+    "show_full_addresses": false,
+    "color_scheme": "dark",
+    "sound_alerts": false
+  },
+  "cache": {
+    "remember_alerted_tokens_hours": 24,
+    "max_cached_tokens": 1000
+  },
+  "notes": {
+    "interval_seconds": "How often to check whale wallets (30-120 seconds recommended)",
+    "transaction_lookback_count": "How many recent transactions to check per wallet",
+    "alert_cooldown_minutes": "Don't alert on same token twice within this time",
+    "min_liquidity_usd": "Tokens below this liquidity are ignored (reduces rug risk)",
+    "min_token_age_minutes": "Ignore tokens younger than this (reduce instant rugs)",
+    "max_token_age_hours": "Ignore tokens older than this (we want early entries)",
+    "min_whale_buy_usd": "Only alert if whale spent at least this much USD",
+    "risk_score_min": "Only alert if safety score is at least this (1-10 scale)",
+    "show_new_tokens_only": "Only alert when whale buys a brand new token",
+    "show_position_increases": "Alert when whale adds to existing position"
+  }
+}

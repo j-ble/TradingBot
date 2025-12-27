@@ -1,0 +1,28 @@
+{
+  "name": "whale-wallet-tracker",
+  "version": "1.0.0",
+  "description": "Console-only scanner that tracks whale wallet transactions for early token discovery",
+  "main": "whale-tracker.js",
+  "type": "module",
+  "scripts": {
+    "start": "node whale-tracker.js",
+    "dev": "node --watch whale-tracker.js"
+  },
+  "keywords": [
+    "crypto",
+    "whale-tracking",
+    "solana",
+    "token-scanner",
+    "dex"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.5",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
