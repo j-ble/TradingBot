@@ -227,6 +227,26 @@ function parseSwapTransaction(tx, debug = false) {
     // Skip SOL (So11111111111111111111111111111111111111112) to avoid noise
     const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
+    // Calculate SOL spent by checking SOL balance decrease
+    let solSpent = 0;
+    for (const postBalance of postTokenBalances) {
+      if (postBalance.mint === SOL_MINT) {
+        const preBalance = preTokenBalances.find(pre =>
+          pre.accountIndex === postBalance.accountIndex
+        );
+        const preSolAmount = preBalance?.uiTokenAmount?.uiAmount || 0;
+        const postSolAmount = postBalance?.uiTokenAmount?.uiAmount || 0;
+
+        // If SOL decreased, this is the amount spent
+        if (preSolAmount > postSolAmount) {
+          solSpent = preSolAmount - postSolAmount;
+          if (debug) {
+            console.log(chalk.dim(`    SOL spent: ${solSpent.toFixed(4)} SOL`));
+          }
+        }
+      }
+    }
+
     for (const postBalance of postTokenBalances) {
       // Skip SOL balances (too much noise from transaction fees, etc.)
       if (postBalance.mint === SOL_MINT) continue;
@@ -249,6 +269,7 @@ function parseSwapTransaction(tx, debug = false) {
           isSwap: true,
           tokenMint: postBalance.mint,
           amount: postAmount - preAmount,
+          solSpent: solSpent,
           timestamp: tx.blockTime || Date.now() / 1000
         };
       }
@@ -370,10 +391,16 @@ async function checkWhaleWallet(whale) {
 
       // Debug: Show what we found
       if (swap.isSwap && swap.tokenMint) {
-        console.log(chalk.green(`  ✓ Detected swap: ${swap.tokenMint.slice(0, 8)}... (+${swap.amount})`));
+        console.log(chalk.green(`  ✓ Detected swap: ${swap.tokenMint.slice(0, 8)}... (+${swap.amount}) [${swap.solSpent.toFixed(4)} SOL]`));
       }
 
       if (!swap.isSwap || !swap.tokenMint) continue;
+
+      // Filter: Check minimum SOL amount spent
+      if (swap.solSpent < config.safety_thresholds.min_sol_amount) {
+        console.log(chalk.dim(`  ⊘ ${swap.tokenMint.slice(0, 8)}... - swap too small (${swap.solSpent.toFixed(4)} SOL < ${config.safety_thresholds.min_sol_amount} SOL)`));
+        continue;
+      }
 
       // Check if we've already alerted on this token recently
       const cacheKey = `${whale.address}:${swap.tokenMint}`;
@@ -486,6 +513,7 @@ function displayWhaleAlert(whale, token, swap, riskScore) {
 
   console.log(chalk.green('\n🆕 NEW TOKEN PURCHASE'));
   console.log(chalk.dim(`   Transaction: ${getTimeAgo(swap.timestamp)}`));
+  console.log(chalk.bold.white(`   Swap Size: ${swap.solSpent.toFixed(4)} SOL`));
 
   console.log(chalk.bold.yellow(`\n📊 ${token.name} (${token.symbol})`));
   console.log(chalk.dim(`   Token: ${formatAddress(token.address, config.display.show_full_addresses)}`));

@@ -10,6 +10,7 @@
     "min_token_age_minutes": 30,
     "max_token_age_hours": 48,
     "min_whale_buy_usd": 500,
+    "min_sol_amount": 1,
     "risk_score_min": 4
   },
   "alerts": {
@@ -36,6 +37,7 @@
     "min_token_age_minutes": "Ignore tokens younger than this (reduce instant rugs)",
     "max_token_age_hours": "Ignore tokens older than this (we want early entries)",
     "min_whale_buy_usd": "Only alert if whale spent at least this much USD",
+    "min_sol_amount": "Only track swaps where whale spent at least this many SOL",
     "risk_score_min": "Only alert if safety score is at least this (1-10 scale)",
     "show_new_tokens_only": "Only alert when whale buys a brand new token",
     "show_position_increases": "Alert when whale adds to existing position"
