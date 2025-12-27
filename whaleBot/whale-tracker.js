@@ -19,6 +19,7 @@ const __dirname = dirname(__filename);
 let config;
 let wallets;
 const alertedTokens = new Map(); // Cache of tokens we've already alerted on
+const processedSignatures = new Map(); // Cache of transaction signatures we've already processed (sig -> timestamp)
 
 async function loadConfig() {
   try {
@@ -50,7 +51,7 @@ class HeliusAPI {
         return [];
       }
 
-      // Use Helius enhanced transactions API
+      // Use Helius enhanced transactions API with 'confirmed' commitment for faster updates
       const response = await axios.post(this.rpcURL, {
         jsonrpc: '2.0',
         id: 'whale-tracker',
@@ -58,7 +59,8 @@ class HeliusAPI {
         params: [
           walletAddress,
           {
-            limit: limit
+            limit: limit,
+            commitment: 'confirmed'  // Get confirmed transactions (faster than finalized)
           }
         ]
       });
@@ -85,7 +87,7 @@ class HeliusAPI {
         return null;
       }
 
-      // Use Helius enhanced transaction API for parsed data
+      // Use Helius enhanced transaction API for parsed data with confirmed commitment
       const response = await axios.post(this.rpcURL, {
         jsonrpc: '2.0',
         id: 'whale-tracker',
@@ -94,7 +96,8 @@ class HeliusAPI {
           signature,
           {
             encoding: 'jsonParsed',
-            maxSupportedTransactionVersion: 0
+            maxSupportedTransactionVersion: 0,
+            commitment: 'confirmed'  // Match commitment level with getSignaturesForAddress
           }
         ]
       });
@@ -377,9 +380,26 @@ async function checkWhaleWallet(whale) {
       return;
     }
 
+    console.log(chalk.dim(`  Found ${signatures.length} recent transaction(s)`));
+
+    // Filter out already processed signatures
+    const newSignatures = signatures.filter(sig => !processedSignatures.has(sig.signature));
+
+    if (newSignatures.length === 0) {
+      console.log(chalk.dim('  All transactions already processed'));
+      return;
+    }
+
+    console.log(chalk.dim(`  Processing ${newSignatures.length} new transaction(s)`));
+
     // Fetch full transaction details for each signature
-    for (const sig of signatures) {
+    for (const sig of newSignatures) {
       const signature = sig.signature;
+      const txTime = sig.blockTime ? new Date(sig.blockTime * 1000).toLocaleTimeString() : 'unknown';
+      console.log(chalk.dim(`  Checking tx: ${signature.slice(0, 16)}... (${txTime})`));
+
+      // Mark signature as processed immediately to avoid re-processing
+      processedSignatures.set(signature, Date.now());
 
       // Fetch full transaction details
       const txDetails = await helius.getTransactionDetails(signature);
@@ -391,7 +411,7 @@ async function checkWhaleWallet(whale) {
 
       // Debug: Show what we found
       if (swap.isSwap && swap.tokenMint) {
-        console.log(chalk.green(`  ✓ Detected swap: ${swap.tokenMint.slice(0, 8)}... (+${swap.amount}) [${swap.solSpent.toFixed(4)} SOL]`));
+        console.log(chalk.green(`  ✓ Detected swap: ${swap.tokenMint.slice(0, 8)}... [${swap.solSpent.toFixed(4)} SOL]`));
       }
 
       if (!swap.isSwap || !swap.tokenMint) continue;
@@ -479,6 +499,7 @@ function cleanAlertCache() {
   const maxAge = config.cache.remember_alerted_tokens_hours * 60 * 60 * 1000;
   const now = Date.now();
 
+  // Clean alerted tokens cache
   for (const [key, timestamp] of alertedTokens.entries()) {
     if (now - timestamp > maxAge) {
       alertedTokens.delete(key);
@@ -493,6 +514,24 @@ function cleanAlertCache() {
     // Remove oldest half
     const toRemove = entries.slice(0, Math.floor(entries.length / 2));
     toRemove.forEach(([key]) => alertedTokens.delete(key));
+  }
+
+  // Clean processed signatures cache (keep for 24 hours)
+  const signatureMaxAge = 24 * 60 * 60 * 1000; // 24 hours
+  for (const [signature, timestamp] of processedSignatures.entries()) {
+    if (now - timestamp > signatureMaxAge) {
+      processedSignatures.delete(signature);
+    }
+  }
+
+  // Limit signature cache size to prevent unbounded growth
+  if (processedSignatures.size > 1000) {
+    const entries = Array.from(processedSignatures.entries());
+    entries.sort((a, b) => a[1] - b[1]); // Sort by timestamp
+
+    // Remove oldest half
+    const toRemove = entries.slice(0, Math.floor(entries.length / 2));
+    toRemove.forEach(([signature]) => processedSignatures.delete(signature));
   }
 }
 
