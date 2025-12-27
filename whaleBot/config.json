@@ -1,12 +1,12 @@
 {
   "scanner": {
-    "interval_seconds": 60,
+    "interval_seconds": 30,
     "transaction_lookback_count": 10,
     "alert_cooldown_minutes": 60,
     "enabled_chains": ["solana"]
   },
   "safety_thresholds": {
-    "min_liquidity_usd": 50000,
+    "min_liquidity_usd": 30000,
     "min_token_age_minutes": 30,
     "max_token_age_hours": 48,
     "min_whale_buy_usd": 500,

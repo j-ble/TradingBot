@@ -37,63 +37,106 @@ async function loadConfig() {
 
 // ==================== API CLIENTS ====================
 
-class SolscanAPI {
+class HeliusAPI {
   constructor() {
-    this.baseURL = 'https://pro-api.solscan.io/v1.0';
-    this.publicURL = 'https://public-api.solscan.io';
-    this.apiKey = process.env.SOLSCAN_API_KEY;
+    this.apiKey = process.env.HELIUS_API_KEY;
+    this.rpcURL = `https://mainnet.helius-rpc.com/?api-key=${this.apiKey}`;
   }
 
   async getWalletTransactions(walletAddress, limit = 10) {
     try {
-      const url = this.apiKey
-        ? `${this.baseURL}/account/transactions`
-        : `${this.publicURL}/account/transactions`;
+      if (!this.apiKey) {
+        console.log(chalk.yellow('⚠️  Helius API key required'));
+        return [];
+      }
 
-      const headers = this.apiKey
-        ? { 'token': this.apiKey }
-        : {};
-
-      const response = await axios.get(url, {
-        params: {
-          account: walletAddress,
-          limit: limit
-        },
-        headers
+      // Use Helius enhanced transactions API
+      const response = await axios.post(this.rpcURL, {
+        jsonrpc: '2.0',
+        id: 'whale-tracker',
+        method: 'getSignaturesForAddress',
+        params: [
+          walletAddress,
+          {
+            limit: limit
+          }
+        ]
       });
 
-      return response.data;
+      if (response.data && response.data.result) {
+        return response.data.result;
+      }
+
+      return [];
     } catch (error) {
       if (error.response?.status === 429) {
-        console.log(chalk.yellow('⚠️  Rate limited by Solscan API - waiting 60s...'));
+        console.log(chalk.yellow('⚠️  Rate limited by Helius - waiting 60s...'));
         await sleep(60000);
         return [];
       }
-      throw error;
+      console.log(chalk.dim(`  Error fetching transactions: ${error.message}`));
+      return [];
+    }
+  }
+
+  async getTransactionDetails(signature) {
+    try {
+      if (!this.apiKey) {
+        return null;
+      }
+
+      // Use Helius enhanced transaction API for parsed data
+      const response = await axios.post(this.rpcURL, {
+        jsonrpc: '2.0',
+        id: 'whale-tracker',
+        method: 'getTransaction',
+        params: [
+          signature,
+          {
+            encoding: 'jsonParsed',
+            maxSupportedTransactionVersion: 0
+          }
+        ]
+      });
+
+      if (response.data && response.data.result) {
+        return response.data.result;
+      }
+
+      return null;
+    } catch (error) {
+      return null;
     }
   }
 
   async getTokenAccountInfo(walletAddress) {
     try {
-      const url = this.apiKey
-        ? `${this.baseURL}/account/tokens`
-        : `${this.publicURL}/account/tokens`;
-
-      const headers = this.apiKey
-        ? { 'token': this.apiKey }
-        : {};
-
-      const response = await axios.get(url, {
-        params: { account: walletAddress },
-        headers
-      });
-
-      return response.data;
-    } catch (error) {
-      if (error.response?.status === 429) {
+      if (!this.apiKey) {
         return [];
       }
-      throw error;
+
+      const response = await axios.post(this.rpcURL, {
+        jsonrpc: '2.0',
+        id: 'whale-tracker',
+        method: 'getTokenAccountsByOwner',
+        params: [
+          walletAddress,
+          {
+            programId: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+          },
+          {
+            encoding: 'jsonParsed'
+          }
+        ]
+      });
+
+      if (response.data && response.data.result && response.data.result.value) {
+        return response.data.result.value;
+      }
+
+      return [];
+    } catch (error) {
+      return [];
     }
   }
 }
@@ -132,7 +175,7 @@ class DexScreenerAPI {
   }
 }
 
-const solscan = new SolscanAPI();
+const helius = new HeliusAPI();
 const dexscreener = new DexScreenerAPI();
 
 // ==================== UTILITY FUNCTIONS ====================
@@ -164,35 +207,57 @@ function getTimeAgo(timestamp) {
 
 // ==================== TOKEN DETECTION ====================
 
-function parseSwapTransaction(tx) {
+function parseSwapTransaction(tx, debug = false) {
   // Parse Solana transaction to detect token swaps
-  // This is a simplified version - real implementation needs more robust parsing
-
   try {
-    // Look for transfer instructions that indicate a swap
-    // Common swap programs: Raydium, Orca, Jupiter
-    const swapPrograms = [
-      '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8', // Raydium V4
-      'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc', // Orca Whirlpool
-      'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'  // Jupiter Aggregator
-    ];
+    if (!tx || !tx.transaction || !tx.meta) {
+      if (debug) console.log(chalk.dim('    Debug: Missing tx structure'));
+      return { isSwap: false };
+    }
 
-    // Simplified: Check if transaction involves any swap program
-    if (tx.parsedInstruction) {
-      for (const instruction of tx.parsedInstruction) {
-        if (swapPrograms.includes(instruction.programId)) {
-          return {
-            isSwap: true,
-            tokenMint: instruction.params?.mint || null,
-            amount: instruction.params?.amount || 0,
-            timestamp: tx.blockTime
-          };
-        }
+    // Extract token changes from post/pre token balances
+    const postTokenBalances = tx.meta.postTokenBalances || [];
+    const preTokenBalances = tx.meta.preTokenBalances || [];
+
+    if (debug) {
+      console.log(chalk.dim(`    Debug: Post token balances: ${postTokenBalances.length}, Pre: ${preTokenBalances.length}`));
+    }
+
+    // Find tokens that increased (likely tokens bought)
+    // Skip SOL (So11111111111111111111111111111111111111112) to avoid noise
+    const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+    for (const postBalance of postTokenBalances) {
+      // Skip SOL balances (too much noise from transaction fees, etc.)
+      if (postBalance.mint === SOL_MINT) continue;
+
+      const preBalance = preTokenBalances.find(pre =>
+        pre.accountIndex === postBalance.accountIndex
+      );
+
+      const preAmount = preBalance?.uiTokenAmount?.uiAmount || 0;
+      const postAmount = postBalance?.uiTokenAmount?.uiAmount || 0;
+
+      if (debug && postBalance.mint !== SOL_MINT) {
+        console.log(chalk.dim(`    Token ${postBalance.mint?.slice(0, 8)}: ${preAmount} → ${postAmount}`));
+      }
+
+      // If token balance increased significantly, this is likely a buy
+      // Require at least 0.001 token increase to filter out dust/rounding errors
+      if (postAmount > preAmount + 0.001 && postBalance.mint) {
+        return {
+          isSwap: true,
+          tokenMint: postBalance.mint,
+          amount: postAmount - preAmount,
+          timestamp: tx.blockTime || Date.now() / 1000
+        };
       }
     }
 
+    if (debug) console.log(chalk.dim('    Debug: No token balance increases found'));
     return { isSwap: false };
   } catch (error) {
+    if (debug) console.log(chalk.dim(`    Debug: Error - ${error.message}`));
     return { isSwap: false };
   }
 }
@@ -280,23 +345,33 @@ async function checkWhaleWallet(whale) {
   try {
     console.log(chalk.dim(`\nChecking ${whale.name} (${formatAddress(whale.address)})...`));
 
-    // Get recent transactions
-    const transactions = await solscan.getWalletTransactions(
+    // Get recent transaction signatures
+    const signatures = await helius.getWalletTransactions(
       whale.address,
       config.scanner.transaction_lookback_count
     );
 
-    if (!transactions || transactions.length === 0) {
+    if (!signatures || signatures.length === 0) {
       console.log(chalk.dim('  No recent transactions'));
       return;
     }
 
-    // Get current token holdings
-    const holdings = await solscan.getTokenAccountInfo(whale.address);
+    // Fetch full transaction details for each signature
+    for (const sig of signatures) {
+      const signature = sig.signature;
 
-    // Parse transactions for token swaps
-    for (const tx of transactions) {
-      const swap = parseSwapTransaction(tx);
+      // Fetch full transaction details
+      const txDetails = await helius.getTransactionDetails(signature);
+
+      if (!txDetails) continue;
+
+      // Parse transaction for token swaps
+      const swap = parseSwapTransaction(txDetails, false);
+
+      // Debug: Show what we found
+      if (swap.isSwap && swap.tokenMint) {
+        console.log(chalk.green(`  ✓ Detected swap: ${swap.tokenMint.slice(0, 8)}... (+${swap.amount})`));
+      }
 
       if (!swap.isSwap || !swap.tokenMint) continue;
 
@@ -515,11 +590,11 @@ async function main() {
   displayBanner();
 
   // Validate API keys
-  if (!process.env.SOLSCAN_API_KEY && !process.env.HELIUS_API_KEY) {
-    console.log(chalk.yellow('⚠️  No Solscan or Helius API key found!'));
-    console.log(chalk.yellow('   Using public Solscan API (rate limited)'));
-    console.log(chalk.yellow('   For better performance, get a free API key at:'));
-    console.log(chalk.yellow('   https://pro-api.solscan.io/\n'));
+  if (!process.env.HELIUS_API_KEY) {
+    console.log(chalk.red('✗ No Helius API key found!'));
+    console.log(chalk.yellow('   Please add HELIUS_API_KEY to your .env file'));
+    console.log(chalk.yellow('   Get a free API key at: https://www.helius.dev/\n'));
+    process.exit(1);
   }
 
   // Initial scan
