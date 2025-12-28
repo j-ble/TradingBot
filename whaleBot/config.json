@@ -1,17 +1,17 @@
 {
   "scanner": {
     "interval_seconds": 30,
-    "transaction_lookback_count": 10,
+    "transaction_lookback_count": 50,
     "alert_cooldown_minutes": 60,
     "enabled_chains": ["solana"]
   },
   "safety_thresholds": {
-    "min_liquidity_usd": 30000,
-    "min_token_age_minutes": 30,
-    "max_token_age_hours": 48,
-    "min_whale_buy_usd": 500,
-    "min_sol_amount": 1,
-    "risk_score_min": 4
+    "min_liquidity_usd": 0,
+    "min_token_age_minutes": 0,
+    "max_token_age_hours": 99999,
+    "min_whale_buy_usd": 0,
+    "min_sol_amount": 0.1,
+    "risk_score_min": 0
   },
   "alerts": {
     "show_new_tokens_only": true,
@@ -28,6 +28,9 @@
   "cache": {
     "remember_alerted_tokens_hours": 24,
     "max_cached_tokens": 1000
+  },
+  "debug": {
+    "enable_verbose_logging": false
   },
   "notes": {
     "interval_seconds": "How often to check whale wallets (30-120 seconds recommended)",

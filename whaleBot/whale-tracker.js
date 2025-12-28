@@ -367,8 +367,6 @@ function calculateRiskScore(tokenDetails) {
 
 async function checkWhaleWallet(whale) {
   try {
-    console.log(chalk.dim(`\nChecking ${whale.name} (${formatAddress(whale.address)})...`));
-
     // Get recent transaction signatures
     const signatures = await helius.getWalletTransactions(
       whale.address,
@@ -376,27 +374,24 @@ async function checkWhaleWallet(whale) {
     );
 
     if (!signatures || signatures.length === 0) {
-      console.log(chalk.dim('  No recent transactions'));
       return;
     }
-
-    console.log(chalk.dim(`  Found ${signatures.length} recent transaction(s)`));
 
     // Filter out already processed signatures
     const newSignatures = signatures.filter(sig => !processedSignatures.has(sig.signature));
 
-    if (newSignatures.length === 0) {
-      console.log(chalk.dim('  All transactions already processed'));
-      return;
+    // Debug logging
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.dim(`  [${whale.name}] Total txs: ${signatures.length}, New: ${newSignatures.length}, Cached: ${signatures.length - newSignatures.length}`));
     }
 
-    console.log(chalk.dim(`  Processing ${newSignatures.length} new transaction(s)`));
+    if (newSignatures.length === 0) {
+      return;
+    }
 
     // Fetch full transaction details for each signature
     for (const sig of newSignatures) {
       const signature = sig.signature;
-      const txTime = sig.blockTime ? new Date(sig.blockTime * 1000).toLocaleTimeString() : 'unknown';
-      console.log(chalk.dim(`  Checking tx: ${signature.slice(0, 16)}... (${txTime})`));
 
       // Mark signature as processed immediately to avoid re-processing
       processedSignatures.set(signature, Date.now());
@@ -407,18 +402,26 @@ async function checkWhaleWallet(whale) {
       if (!txDetails) continue;
 
       // Parse transaction for token swaps
-      const swap = parseSwapTransaction(txDetails, false);
+      const swap = parseSwapTransaction(txDetails, config.debug?.enable_verbose_logging || false);
 
-      // Debug: Show what we found
-      if (swap.isSwap && swap.tokenMint) {
-        console.log(chalk.green(`  ✓ Detected swap: ${swap.tokenMint.slice(0, 8)}... [${swap.solSpent.toFixed(4)} SOL]`));
+      if (!swap.isSwap || !swap.tokenMint) {
+        // Debug: Log non-swap transactions if verbose mode enabled
+        if (config.debug?.enable_verbose_logging && swap.solSpent > 0) {
+          console.log(chalk.dim(`  [${whale.name}] Not a swap - SOL: ${swap.solSpent.toFixed(4)}, Reason: No token balance increase`));
+        }
+        continue;
       }
 
-      if (!swap.isSwap || !swap.tokenMint) continue;
+      // Debug: Log detected swaps
+      if (config.debug?.enable_verbose_logging) {
+        console.log(chalk.yellow(`  [${whale.name}] SWAP DETECTED - ${swap.solSpent.toFixed(4)} SOL → Token: ${swap.tokenMint.slice(0, 8)}...`));
+      }
 
       // Filter: Check minimum SOL amount spent
       if (swap.solSpent < config.safety_thresholds.min_sol_amount) {
-        console.log(chalk.dim(`  ⊘ ${swap.tokenMint.slice(0, 8)}... - swap too small (${swap.solSpent.toFixed(4)} SOL < ${config.safety_thresholds.min_sol_amount} SOL)`));
+        if (config.debug?.enable_verbose_logging) {
+          console.log(chalk.dim(`  [${whale.name}] FILTERED - SOL amount ${swap.solSpent.toFixed(4)} < ${config.safety_thresholds.min_sol_amount} minimum`));
+        }
         continue;
       }
 
@@ -436,11 +439,26 @@ async function checkWhaleWallet(whale) {
       // Get token details from DexScreener
       const tokenDetails = await getTokenDetails(swap.tokenMint);
 
-      if (!tokenDetails) continue;
+      if (!tokenDetails) {
+        // No DexScreener data - show basic alert anyway
+        if (config.debug?.enable_verbose_logging) {
+          console.log(chalk.red(`  [${whale.name}] No DexScreener data for token ${swap.tokenMint.slice(0, 8)}... - showing basic alert`));
+        }
+        displayBasicWhaleAlert(whale, swap);
+
+        // Cache this alert
+        const cacheKey = `${whale.address}:${swap.tokenMint}`;
+        alertedTokens.set(cacheKey, Date.now());
+        cleanAlertCache();
+        await sleep(2000);
+        continue;
+      }
 
       // Apply safety filters
-      if (!passesFilters(tokenDetails, whale, swap)) {
-        console.log(chalk.dim(`  ⊘ ${tokenDetails.symbol} - filtered out`));
+      if (!passesFilters(tokenDetails)) {
+        if (config.debug?.enable_verbose_logging) {
+          console.log(chalk.dim(`  [${whale.name}] FILTERED - Failed safety checks (liquidity: $${tokenDetails.liquidityUsd.toFixed(0)}, age: ${calculateTokenAge(tokenDetails.pairCreatedAt)?.ageMinutes || 'unknown'} min)`));
+        }
         continue;
       }
 
@@ -448,7 +466,9 @@ async function checkWhaleWallet(whale) {
       const riskScore = calculateRiskScore(tokenDetails);
 
       if (riskScore < config.safety_thresholds.risk_score_min) {
-        console.log(chalk.dim(`  ⊘ ${tokenDetails.symbol} - risk score too low (${riskScore}/10)`));
+        if (config.debug?.enable_verbose_logging) {
+          console.log(chalk.dim(`  [${whale.name}] FILTERED - Risk score ${riskScore}/10 < ${config.safety_thresholds.risk_score_min} minimum`));
+        }
         continue;
       }
 
@@ -470,8 +490,8 @@ async function checkWhaleWallet(whale) {
   }
 }
 
-function passesFilters(tokenDetails, whale, swap) {
-  const { safety_thresholds, alerts } = config;
+function passesFilters(tokenDetails) {
+  const { safety_thresholds } = config;
 
   // Liquidity check
   if (tokenDetails.liquidityUsd < safety_thresholds.min_liquidity_usd) {
@@ -536,6 +556,33 @@ function cleanAlertCache() {
 }
 
 // ==================== DISPLAY ====================
+
+function displayBasicWhaleAlert(whale, swap) {
+  console.log('\n' + chalk.bold.bgYellow.black(' 🐋 WHALE ALERT (Limited Data) '));
+  console.log(chalk.yellow('━'.repeat(70)));
+
+  console.log(chalk.bold.white(`\n🔔 ${whale.name}`) + chalk.dim(` (${formatAddress(whale.address)})`));
+
+  console.log(chalk.green('\n🆕 NEW TOKEN PURCHASE'));
+  console.log(chalk.dim(`   Transaction: ${getTimeAgo(swap.timestamp)}`));
+  console.log(chalk.bold.white(`   Swap Size: ${swap.solSpent.toFixed(4)} SOL`));
+  console.log(chalk.yellow(`   Token Amount: ${swap.amount.toFixed(2)}`));
+
+  console.log(chalk.bold.yellow(`\n📊 Token Address:`));
+  console.log(chalk.dim(`   ${swap.tokenMint}`));
+
+  console.log(chalk.red('\n⚠️  No DexScreener Data Available'));
+  console.log(chalk.dim('   This token may be:'));
+  console.log(chalk.dim('   • Too new (not indexed yet)'));
+  console.log(chalk.dim('   • Not traded on major DEXs'));
+  console.log(chalk.dim('   • A private/unlisted token'));
+
+  console.log(chalk.white('\n🔗 Links:'));
+  console.log(`   Token: ${chalk.blue('https://solscan.io/token/' + swap.tokenMint)}`);
+  console.log(`   Wallet: ${chalk.blue('https://solscan.io/account/' + whale.address)}`);
+
+  console.log(chalk.yellow('\n' + '━'.repeat(70) + '\n'));
+}
 
 function displayWhaleAlert(whale, token, swap, riskScore) {
   console.log('\n' + chalk.bold.bgCyan.black(' 🐋 WHALE ALERT '));
@@ -622,7 +669,8 @@ function displayBanner() {
   console.log(chalk.white(`📡 Monitoring: ${chalk.bold(enabledWallets.length)} whale wallets`));
   console.log(chalk.white(`⏱️  Scan Interval: ${chalk.bold(config.scanner.interval_seconds + 's')}`));
   console.log(chalk.white(`🔒 Safety: Min liquidity $${chalk.bold(formatNumber(config.safety_thresholds.min_liquidity_usd))}, Min risk score ${chalk.bold(config.safety_thresholds.risk_score_min)}/10`));
-  console.log(chalk.dim(`\nPress Ctrl+C to stop\n`));
+  console.log(chalk.yellow(`\n💡 Quiet Mode: Only whale alerts will be displayed`));
+  console.log(chalk.dim(`Press Ctrl+C to stop\n`));
 }
 
 // ==================== MAIN SCANNER ====================
@@ -636,15 +684,13 @@ async function scanAllWhales() {
     return;
   }
 
-  console.log(chalk.bold.white(`\n🔍 Scanning ${enabledWallets.length} whale wallets...`));
-  console.log(chalk.dim(`   ${new Date().toLocaleString()}\n`));
+  // Silent monitoring - only show timestamp
+  console.log(chalk.dim(`[${new Date().toLocaleTimeString()}] Monitoring...`));
 
   for (const whale of enabledWallets) {
     await checkWhaleWallet(whale);
     await sleep(2000); // Rate limiting between wallets
   }
-
-  console.log(chalk.dim(`\n✓ Scan completed. Waiting ${config.scanner.interval_seconds}s until next scan...\n`));
 }
 
 async function main() {
