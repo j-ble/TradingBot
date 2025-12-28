@@ -10,7 +10,7 @@
     "min_token_age_minutes": 0,
     "max_token_age_hours": 99999,
     "min_whale_buy_usd": 0,
-    "min_sol_amount": 0.1,
+    "min_sol_amount": 1,
     "risk_score_min": 0
   },
   "alerts": {
