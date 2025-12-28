@@ -20,6 +20,7 @@ let config;
 let wallets;
 const alertedTokens = new Map(); // Cache of tokens we've already alerted on
 const processedSignatures = new Map(); // Cache of transaction signatures we've already processed (sig -> timestamp)
+let isFirstScan = true; // Flag to track if this is the initial scan
 
 async function loadConfig() {
   try {
@@ -377,6 +378,17 @@ async function checkWhaleWallet(whale) {
       return;
     }
 
+    // If this is the first scan, just cache all signatures without processing
+    if (isFirstScan) {
+      for (const sig of signatures) {
+        processedSignatures.set(sig.signature, Date.now());
+      }
+      if (config.debug?.enable_verbose_logging) {
+        console.log(chalk.dim(`  [${whale.name}] First scan - cached ${signatures.length} existing transactions`));
+      }
+      return;
+    }
+
     // Filter out already processed signatures
     const newSignatures = signatures.filter(sig => !processedSignatures.has(sig.signature));
 
@@ -685,11 +697,21 @@ async function scanAllWhales() {
   }
 
   // Silent monitoring - only show timestamp
-  console.log(chalk.dim(`[${new Date().toLocaleTimeString()}] Monitoring...`));
+  if (isFirstScan) {
+    console.log(chalk.yellow(`[${new Date().toLocaleTimeString()}] Initial scan - caching existing transactions...`));
+  } else {
+    console.log(chalk.dim(`[${new Date().toLocaleTimeString()}] Monitoring...`));
+  }
 
   for (const whale of enabledWallets) {
     await checkWhaleWallet(whale);
     await sleep(2000); // Rate limiting between wallets
+  }
+
+  // After first complete scan, mark as no longer first scan
+  if (isFirstScan) {
+    isFirstScan = false;
+    console.log(chalk.green(`✓ Initial scan complete - now monitoring for NEW transactions only\n`));
   }
 }
 
