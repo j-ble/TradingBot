@@ -20,6 +20,7 @@ let config;
 let wallets;
 const alertedTokens = new Map(); // Cache of tokens we've already alerted on
 const processedSignatures = new Map(); // Cache of transaction signatures we've already processed (sig -> timestamp)
+const whalePositions = new Map(); // Track open positions: "walletAddress:tokenMint" -> position object
 let isFirstScan = true; // Flag to track if this is the initial scan
 
 async function loadConfig() {
@@ -212,11 +213,11 @@ function getTimeAgo(timestamp) {
 // ==================== TOKEN DETECTION ====================
 
 function parseSwapTransaction(tx, debug = false) {
-  // Parse Solana transaction to detect token swaps
+  // Parse Solana transaction to detect token swaps (both BUYs and SELLs)
   try {
     if (!tx || !tx.transaction || !tx.meta) {
       if (debug) console.log(chalk.dim('    Debug: Missing tx structure'));
-      return { isSwap: false };
+      return [];
     }
 
     // Extract token changes from post/pre token balances
@@ -227,12 +228,13 @@ function parseSwapTransaction(tx, debug = false) {
       console.log(chalk.dim(`    Debug: Post token balances: ${postTokenBalances.length}, Pre: ${preTokenBalances.length}`));
     }
 
-    // Find tokens that increased (likely tokens bought)
-    // Skip SOL (So11111111111111111111111111111111111111112) to avoid noise
     const SOL_MINT = 'So11111111111111111111111111111111111111112';
+    const swaps = [];
 
-    // Calculate SOL spent by checking SOL balance decrease
+    // Calculate SOL spent/received by checking SOL balance changes
     let solSpent = 0;
+    let solReceived = 0;
+
     for (const postBalance of postTokenBalances) {
       if (postBalance.mint === SOL_MINT) {
         const preBalance = preTokenBalances.find(pre =>
@@ -241,18 +243,26 @@ function parseSwapTransaction(tx, debug = false) {
         const preSolAmount = preBalance?.uiTokenAmount?.uiAmount || 0;
         const postSolAmount = postBalance?.uiTokenAmount?.uiAmount || 0;
 
-        // If SOL decreased, this is the amount spent
+        // If SOL decreased, this is the amount spent (BUY)
         if (preSolAmount > postSolAmount) {
           solSpent = preSolAmount - postSolAmount;
           if (debug) {
             console.log(chalk.dim(`    SOL spent: ${solSpent.toFixed(4)} SOL`));
           }
         }
+        // If SOL increased, this is the amount received (SELL)
+        else if (postSolAmount > preSolAmount) {
+          solReceived = postSolAmount - preSolAmount;
+          if (debug) {
+            console.log(chalk.dim(`    SOL received: ${solReceived.toFixed(4)} SOL`));
+          }
+        }
       }
     }
 
+    // Check all token balance changes
     for (const postBalance of postTokenBalances) {
-      // Skip SOL balances (too much noise from transaction fees, etc.)
+      // Skip SOL balances (handled separately above)
       if (postBalance.mint === SOL_MINT) continue;
 
       const preBalance = preTokenBalances.find(pre =>
@@ -261,29 +271,45 @@ function parseSwapTransaction(tx, debug = false) {
 
       const preAmount = preBalance?.uiTokenAmount?.uiAmount || 0;
       const postAmount = postBalance?.uiTokenAmount?.uiAmount || 0;
+      const change = postAmount - preAmount;
 
       if (debug && postBalance.mint !== SOL_MINT) {
-        console.log(chalk.dim(`    Token ${postBalance.mint?.slice(0, 8)}: ${preAmount} → ${postAmount}`));
+        console.log(chalk.dim(`    Token ${postBalance.mint?.slice(0, 8)}: ${preAmount} → ${postAmount} (${change > 0 ? '+' : ''}${change.toFixed(4)})`));
       }
 
-      // If token balance increased significantly, this is likely a buy
-      // Require at least 0.001 token increase to filter out dust/rounding errors
-      if (postAmount > preAmount + 0.001 && postBalance.mint) {
-        return {
+      // BUY: Token balance increased significantly
+      if (change > 0.001 && postBalance.mint) {
+        swaps.push({
           isSwap: true,
+          direction: 'BUY',
           tokenMint: postBalance.mint,
-          amount: postAmount - preAmount,
+          amount: change,
           solSpent: solSpent,
           timestamp: tx.blockTime || Date.now() / 1000
-        };
+        });
+      }
+
+      // SELL: Token balance decreased significantly
+      else if (change < -0.001 && postBalance.mint) {
+        swaps.push({
+          isSwap: true,
+          direction: 'SELL',
+          tokenMint: postBalance.mint,
+          amount: Math.abs(change),
+          solReceived: solReceived,
+          timestamp: tx.blockTime || Date.now() / 1000
+        });
       }
     }
 
-    if (debug) console.log(chalk.dim('    Debug: No token balance increases found'));
-    return { isSwap: false };
+    if (debug && swaps.length === 0) {
+      console.log(chalk.dim('    Debug: No token balance changes found'));
+    }
+
+    return swaps;
   } catch (error) {
     if (debug) console.log(chalk.dim(`    Debug: Error - ${error.message}`));
-    return { isSwap: false };
+    return [];
   }
 }
 
@@ -364,6 +390,182 @@ function calculateRiskScore(tokenDetails) {
   return Math.max(0, Math.min(10, score));
 }
 
+// ==================== POSITION MANAGEMENT ====================
+
+function openPosition(whale, tokenMint, amount, solSpent, tokenDetails, timestamp) {
+  const positionKey = `${whale.address}:${tokenMint}`;
+
+  const existing = whalePositions.get(positionKey);
+
+  if (existing) {
+    // Adding to existing position
+    const oldAmount = existing.currentAmount;
+    const oldSolSpent = existing.entrySOLSpent;
+
+    existing.currentAmount += amount;
+    existing.entrySOLSpent += solSpent;
+
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.yellow(`  [${whale.name}] Position increase: ${oldAmount.toFixed(2)} → ${existing.currentAmount.toFixed(2)} tokens (+${solSpent.toFixed(4)} SOL)`));
+    }
+
+    return { type: 'INCREASE', position: existing };
+  } else {
+    // New position
+    const newPosition = {
+      walletAddress: whale.address,
+      walletName: whale.name,
+      tokenMint: tokenMint,
+      entryAmount: amount,
+      entryTimestamp: timestamp,
+      entrySOLSpent: solSpent,
+      currentAmount: amount,
+      tokenSymbol: tokenDetails?.symbol || 'UNKNOWN',
+      tokenName: tokenDetails?.name || 'Unknown Token'
+    };
+
+    whalePositions.set(positionKey, newPosition);
+
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.green(`  [${whale.name}] New position opened: ${amount.toFixed(2)} tokens for ${solSpent.toFixed(4)} SOL`));
+    }
+
+    // Save positions to disk
+    savePositions().catch(err => console.error('Error saving positions:', err));
+
+    return { type: 'NEW', position: newPosition };
+  }
+}
+
+function closePosition(whale, tokenMint, amountSold, solReceived, timestamp) {
+  const positionKey = `${whale.address}:${tokenMint}`;
+  const position = whalePositions.get(positionKey);
+
+  if (!position) {
+    // No tracked position (might have been bought before tracker started)
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.yellow(`  [${whale.name}] Sell detected but no position tracked (may predate tracker)`));
+    }
+    return null;
+  }
+
+  // Calculate metrics
+  const holdingTimeSeconds = timestamp - position.entryTimestamp;
+  const percentSold = (amountSold / position.currentAmount) * 100;
+
+  // Calculate P&L
+  const avgEntryPriceSOL = position.entrySOLSpent / position.currentAmount;
+  const avgExitPriceSOL = amountSold > 0 ? solReceived / amountSold : 0;
+  const profitLossSOL = solReceived - (avgEntryPriceSOL * amountSold);
+  const profitLossPercent = avgEntryPriceSOL > 0 ? ((avgExitPriceSOL - avgEntryPriceSOL) / avgEntryPriceSOL) * 100 : 0;
+
+  // Update or close position
+  if (amountSold >= position.currentAmount * 0.99) {
+    // Full exit (99%+ sold)
+    whalePositions.delete(positionKey);
+
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.red(`  [${whale.name}] Position closed: ${profitLossPercent > 0 ? 'PROFIT' : 'LOSS'} ${profitLossPercent.toFixed(2)}%`));
+    }
+
+    // Save positions to disk
+    savePositions().catch(err => console.error('Error saving positions:', err));
+
+    return {
+      ...position,
+      exitType: 'FULL',
+      amountSold: amountSold,
+      solReceived: solReceived,
+      holdingTimeSeconds: holdingTimeSeconds,
+      profitLossSOL: profitLossSOL,
+      profitLossPercent: profitLossPercent,
+      avgEntryPriceSOL: avgEntryPriceSOL,
+      avgExitPriceSOL: avgExitPriceSOL
+    };
+  } else {
+    // Partial exit
+    const oldAmount = position.currentAmount;
+    position.currentAmount -= amountSold;
+
+    // Adjust the remaining SOL spent proportionally
+    const solSpentOnSold = avgEntryPriceSOL * amountSold;
+    position.entrySOLSpent -= solSpentOnSold;
+
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.yellow(`  [${whale.name}] Partial exit: ${oldAmount.toFixed(2)} → ${position.currentAmount.toFixed(2)} tokens (${percentSold.toFixed(1)}% sold)`));
+    }
+
+    // Save positions to disk
+    savePositions().catch(err => console.error('Error saving positions:', err));
+
+    return {
+      ...position,
+      exitType: 'PARTIAL',
+      amountSold: amountSold,
+      solReceived: solReceived,
+      percentSold: percentSold,
+      holdingTimeSeconds: holdingTimeSeconds,
+      profitLossSOL: profitLossSOL,
+      profitLossPercent: profitLossPercent,
+      avgEntryPriceSOL: avgEntryPriceSOL,
+      avgExitPriceSOL: avgExitPriceSOL
+    };
+  }
+}
+
+function formatHoldingTime(seconds) {
+  const hours = seconds / 3600;
+  const days = hours / 24;
+
+  if (days >= 1) return `${days.toFixed(1)} days`;
+  if (hours >= 1) return `${hours.toFixed(1)} hours`;
+  return `${Math.floor(seconds / 60)} minutes`;
+}
+
+async function savePositions() {
+  try {
+    // Convert Map to array for JSON serialization
+    const positionsArray = Array.from(whalePositions.entries()).map(([key, value]) => ({
+      key,
+      ...value
+    }));
+
+    await fs.writeFile(
+      join(__dirname, 'positions.json'),
+      JSON.stringify(positionsArray, null, 2),
+      'utf-8'
+    );
+
+    if (config.debug?.enable_verbose_logging) {
+      console.log(chalk.dim(`  Saved ${positionsArray.length} positions to positions.json`));
+    }
+  } catch (error) {
+    console.error(chalk.red('Error saving positions:'), error.message);
+  }
+}
+
+async function loadPositions() {
+  try {
+    const data = await fs.readFile(join(__dirname, 'positions.json'), 'utf-8');
+    const positionsArray = JSON.parse(data);
+
+    // Convert array back to Map
+    for (const position of positionsArray) {
+      const { key, ...positionData } = position;
+      whalePositions.set(key, positionData);
+    }
+
+    console.log(chalk.green(`✓ Loaded ${whalePositions.size} existing positions`));
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist yet - this is fine on first run
+      console.log(chalk.dim('  No existing positions file found - starting fresh'));
+    } else {
+      console.error(chalk.yellow('Warning: Could not load positions:'), error.message);
+    }
+  }
+}
+
 // ==================== WHALE TRACKING ====================
 
 async function checkWhaleWallet(whale) {
@@ -413,88 +615,125 @@ async function checkWhaleWallet(whale) {
 
       if (!txDetails) continue;
 
-      // Parse transaction for token swaps
-      const swap = parseSwapTransaction(txDetails, config.debug?.enable_verbose_logging || false);
+      // Parse transaction for token swaps (returns array of swaps)
+      const swaps = parseSwapTransaction(txDetails, config.debug?.enable_verbose_logging || false);
 
-      if (!swap.isSwap || !swap.tokenMint) {
+      if (!swaps || swaps.length === 0) {
         // Debug: Log non-swap transactions if verbose mode enabled
-        if (config.debug?.enable_verbose_logging && swap.solSpent > 0) {
-          console.log(chalk.dim(`  [${whale.name}] Not a swap - SOL: ${swap.solSpent.toFixed(4)}, Reason: No token balance increase`));
-        }
-        continue;
-      }
-
-      // Debug: Log detected swaps
-      if (config.debug?.enable_verbose_logging) {
-        console.log(chalk.yellow(`  [${whale.name}] SWAP DETECTED - ${swap.solSpent.toFixed(4)} SOL → Token: ${swap.tokenMint.slice(0, 8)}...`));
-      }
-
-      // Filter: Check minimum SOL amount spent
-      if (swap.solSpent < config.safety_thresholds.min_sol_amount) {
         if (config.debug?.enable_verbose_logging) {
-          console.log(chalk.dim(`  [${whale.name}] FILTERED - SOL amount ${swap.solSpent.toFixed(4)} < ${config.safety_thresholds.min_sol_amount} minimum`));
+          console.log(chalk.dim(`  [${whale.name}] No swaps detected in transaction`));
         }
         continue;
       }
 
-      // Check if we've already alerted on this token recently
-      const cacheKey = `${whale.address}:${swap.tokenMint}`;
-      const lastAlert = alertedTokens.get(cacheKey);
+      // Process each swap in the transaction
+      for (const swap of swaps) {
+        if (!swap.isSwap || !swap.tokenMint) continue;
 
-      if (lastAlert) {
-        const hoursSinceAlert = (Date.now() - lastAlert) / (1000 * 60 * 60);
-        if (hoursSinceAlert < config.cache.remember_alerted_tokens_hours) {
-          continue; // Skip - already alerted recently
-        }
-      }
-
-      // Get token details from DexScreener
-      const tokenDetails = await getTokenDetails(swap.tokenMint);
-
-      if (!tokenDetails) {
-        // No DexScreener data - show basic alert anyway
+        // Debug: Log detected swaps
         if (config.debug?.enable_verbose_logging) {
-          console.log(chalk.red(`  [${whale.name}] No DexScreener data for token ${swap.tokenMint.slice(0, 8)}... - showing basic alert`));
+          if (swap.direction === 'BUY') {
+            console.log(chalk.yellow(`  [${whale.name}] BUY DETECTED - ${swap.solSpent.toFixed(4)} SOL → ${swap.amount.toFixed(2)} tokens of ${swap.tokenMint.slice(0, 8)}...`));
+          } else {
+            console.log(chalk.magenta(`  [${whale.name}] SELL DETECTED - ${swap.amount.toFixed(2)} tokens → ${swap.solReceived.toFixed(4)} SOL from ${swap.tokenMint.slice(0, 8)}...`));
+          }
         }
-        displayBasicWhaleAlert(whale, swap);
 
-        // Cache this alert
-        const cacheKey = `${whale.address}:${swap.tokenMint}`;
-        alertedTokens.set(cacheKey, Date.now());
-        cleanAlertCache();
-        await sleep(2000);
-        continue;
-      }
+        // ===== HANDLE BUY =====
+        if (swap.direction === 'BUY') {
+          // Filter: Check minimum SOL amount spent
+          if (swap.solSpent < config.safety_thresholds.min_sol_amount) {
+            if (config.debug?.enable_verbose_logging) {
+              console.log(chalk.dim(`  [${whale.name}] FILTERED - SOL amount ${swap.solSpent.toFixed(4)} < ${config.safety_thresholds.min_sol_amount} minimum`));
+            }
+            continue;
+          }
 
-      // Apply safety filters
-      if (!passesFilters(tokenDetails)) {
-        if (config.debug?.enable_verbose_logging) {
-          console.log(chalk.dim(`  [${whale.name}] FILTERED - Failed safety checks (liquidity: $${tokenDetails.liquidityUsd.toFixed(0)}, age: ${calculateTokenAge(tokenDetails.pairCreatedAt)?.ageMinutes || 'unknown'} min)`));
+          // Check if we've already alerted on this token recently
+          const cacheKey = `${whale.address}:${swap.tokenMint}`;
+          const lastAlert = alertedTokens.get(cacheKey);
+
+          if (lastAlert) {
+            const hoursSinceAlert = (Date.now() - lastAlert) / (1000 * 60 * 60);
+            if (hoursSinceAlert < config.cache.remember_alerted_tokens_hours) {
+              continue; // Skip - already alerted recently
+            }
+          }
+
+          // Get token details from DexScreener
+          const tokenDetails = await getTokenDetails(swap.tokenMint);
+
+          if (!tokenDetails) {
+            // No DexScreener data - show basic alert anyway
+            if (config.debug?.enable_verbose_logging) {
+              console.log(chalk.red(`  [${whale.name}] No DexScreener data for token ${swap.tokenMint.slice(0, 8)}... - showing basic alert`));
+            }
+            displayBasicWhaleAlert(whale, swap);
+
+            // Track position even without DexScreener data
+            openPosition(whale, swap.tokenMint, swap.amount, swap.solSpent, null, swap.timestamp);
+
+            // Cache this alert
+            alertedTokens.set(cacheKey, Date.now());
+            cleanAlertCache();
+            await sleep(2000);
+            continue;
+          }
+
+          // Apply safety filters
+          if (!passesFilters(tokenDetails)) {
+            if (config.debug?.enable_verbose_logging) {
+              console.log(chalk.dim(`  [${whale.name}] FILTERED - Failed safety checks (liquidity: $${tokenDetails.liquidityUsd.toFixed(0)}, age: ${calculateTokenAge(tokenDetails.pairCreatedAt)?.ageMinutes || 'unknown'} min)`));
+            }
+            continue;
+          }
+
+          // Calculate risk score
+          const riskScore = calculateRiskScore(tokenDetails);
+
+          if (riskScore < config.safety_thresholds.risk_score_min) {
+            if (config.debug?.enable_verbose_logging) {
+              console.log(chalk.dim(`  [${whale.name}] FILTERED - Risk score ${riskScore}/10 < ${config.safety_thresholds.risk_score_min} minimum`));
+            }
+            continue;
+          }
+
+          // WHALE BUY ALERT!
+          displayWhaleAlert(whale, tokenDetails, swap, riskScore);
+
+          // Track this position
+          openPosition(whale, swap.tokenMint, swap.amount, swap.solSpent, tokenDetails, swap.timestamp);
+
+          // Cache this alert
+          alertedTokens.set(cacheKey, Date.now());
+
+          // Clean old cache entries
+          cleanAlertCache();
+
+          // Rate limiting pause
+          await sleep(2000);
         }
-        continue;
-      }
 
-      // Calculate risk score
-      const riskScore = calculateRiskScore(tokenDetails);
+        // ===== HANDLE SELL =====
+        else if (swap.direction === 'SELL') {
+          // Try to close/update the position
+          const exitInfo = closePosition(whale, swap.tokenMint, swap.amount, swap.solReceived, swap.timestamp);
 
-      if (riskScore < config.safety_thresholds.risk_score_min) {
-        if (config.debug?.enable_verbose_logging) {
-          console.log(chalk.dim(`  [${whale.name}] FILTERED - Risk score ${riskScore}/10 < ${config.safety_thresholds.risk_score_min} minimum`));
+          // Only show sell alert if config allows and we have position data
+          if (exitInfo && config.alerts.show_whale_sells) {
+            // Get current token details for sell alert
+            const tokenDetails = await getTokenDetails(swap.tokenMint);
+
+            // Display sell alert with P&L
+            displayWhaleSellAlert(whale, tokenDetails, exitInfo);
+
+            // Rate limiting pause
+            await sleep(2000);
+          } else if (!exitInfo && config.debug?.enable_verbose_logging) {
+            console.log(chalk.dim(`  [${whale.name}] Sell detected but not alerted (no tracked position or alerts disabled)`));
+          }
         }
-        continue;
       }
-
-      // WHALE ALERT!
-      displayWhaleAlert(whale, tokenDetails, swap, riskScore);
-
-      // Cache this alert
-      alertedTokens.set(cacheKey, Date.now());
-
-      // Clean old cache entries
-      cleanAlertCache();
-
-      // Rate limiting pause
-      await sleep(2000);
     }
 
   } catch (error) {
@@ -643,6 +882,63 @@ function displayWhaleAlert(whale, token, swap, riskScore) {
   console.log(chalk.cyan('\n' + '━'.repeat(70) + '\n'));
 }
 
+function displayWhaleSellAlert(whale, token, exitInfo) {
+  const isProfitable = exitInfo.profitLossPercent > 0;
+  const headerColor = isProfitable ? chalk.bold.bgGreen.black : chalk.bold.bgRed.white;
+  const borderColor = isProfitable ? chalk.green : chalk.red;
+
+  console.log('\n' + headerColor(' 🐋 WHALE SELL ALERT '));
+  console.log(borderColor('━'.repeat(70)));
+
+  console.log(chalk.bold.white(`\n🔔 ${whale.name}`) + chalk.dim(` (${formatAddress(whale.address)})`));
+
+  const holdingTime = formatHoldingTime(exitInfo.holdingTimeSeconds);
+
+  const exitTypeEmoji = exitInfo.exitType === 'FULL' ? '📤' : '📊';
+  const exitTypeColor = exitInfo.exitType === 'FULL' ? chalk.red : chalk.yellow;
+
+  console.log(exitTypeColor(`\n${exitTypeEmoji} ${exitInfo.exitType} POSITION EXIT`));
+  console.log(chalk.dim(`   Transaction: ${getTimeAgo(exitInfo.timestamp || Date.now() / 1000)}`));
+  console.log(chalk.dim(`   Holding Time: ${chalk.bold(holdingTime)}`));
+
+  if (exitInfo.exitType === 'PARTIAL') {
+    console.log(chalk.yellow(`   Amount Sold: ${exitInfo.percentSold.toFixed(1)}% of position`));
+    console.log(chalk.dim(`   Remaining: ${exitInfo.currentAmount.toFixed(2)} tokens`));
+  }
+
+  console.log(chalk.bold.yellow(`\n📊 ${exitInfo.tokenName} (${exitInfo.tokenSymbol})`));
+  console.log(chalk.dim(`   Token: ${formatAddress(exitInfo.tokenMint, config.display.show_full_addresses)}`));
+
+  // P&L Section
+  const plColor = isProfitable ? chalk.green : chalk.red;
+  const plSymbol = isProfitable ? '+' : '';
+
+  console.log(chalk.white('\n💰 Trade Performance:'));
+  console.log(`   Entry Price: ${chalk.cyan(exitInfo.avgEntryPriceSOL.toFixed(8) + ' SOL/token')}`);
+  console.log(`   Exit Price: ${chalk.cyan(exitInfo.avgExitPriceSOL.toFixed(8) + ' SOL/token')}`);
+  console.log(`   SOL Received: ${chalk.bold.white(exitInfo.solReceived.toFixed(4) + ' SOL')}`);
+  console.log(`   P&L (SOL): ${plColor(plSymbol + exitInfo.profitLossSOL.toFixed(4) + ' SOL')}`);
+  console.log(`   P&L (%): ${plColor.bold(plSymbol + exitInfo.profitLossPercent.toFixed(2) + '%')}`);
+
+  // Token details if available
+  if (token) {
+    console.log(chalk.white('\n📈 Current Token Metrics:'));
+    console.log(`   Price: ${chalk.green('$' + token.priceUsd.toFixed(8))}`);
+    console.log(`   Liquidity: ${getLiquidityColor(token.liquidityUsd)('$' + formatNumber(token.liquidityUsd))}`);
+    console.log(`   24h Volume: ${chalk.blue('$' + formatNumber(token.volume24h))}`);
+    console.log(`   24h Change: ${getPriceChangeColor(token.priceChange24h)(token.priceChange24h.toFixed(2) + '%')}`);
+  }
+
+  console.log(chalk.white('\n🔗 Links:'));
+  if (token && token.url) {
+    console.log(`   DexScreener: ${chalk.blue(token.url)}`);
+  }
+  console.log(`   Token: ${chalk.blue('https://solscan.io/token/' + exitInfo.tokenMint)}`);
+  console.log(`   Wallet: ${chalk.blue('https://solscan.io/account/' + whale.address)}`);
+
+  console.log(borderColor('\n' + '━'.repeat(70) + '\n'));
+}
+
 function getLiquidityColor(liquidity) {
   if (liquidity >= 200000) return chalk.green;
   if (liquidity >= 100000) return chalk.yellow;
@@ -721,6 +1017,9 @@ async function main() {
   // Load configuration
   await loadConfig();
 
+  // Load existing positions
+  await loadPositions();
+
   // Display banner
   displayBanner();
 
@@ -735,10 +1034,15 @@ async function main() {
   // Initial scan
   await scanAllWhales();
 
-  // Set up interval
+  // Set up scan interval
   setInterval(async () => {
     await scanAllWhales();
   }, config.scanner.interval_seconds * 1000);
+
+  // Set up periodic position saving (every 5 minutes)
+  setInterval(async () => {
+    await savePositions();
+  }, 5 * 60 * 1000);
 }
 
 // ==================== START ====================
@@ -749,8 +1053,10 @@ main().catch(error => {
 });
 
 // Handle graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log(chalk.yellow('\n\n👋 Shutting down whale tracker...'));
+  console.log(chalk.dim('  Saving positions...'));
+  await savePositions();
   console.log(chalk.green('✓ Goodbye!\n'));
   process.exit(0);
 });

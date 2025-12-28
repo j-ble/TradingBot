@@ -17,7 +17,7 @@
     "show_new_tokens_only": true,
     "show_position_increases": false,
     "min_position_increase_multiplier": 2.0,
-    "show_whale_sells": false
+    "show_whale_sells": true
   },
   "display": {
     "show_banner": true,

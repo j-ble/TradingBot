@@ -13,6 +13,13 @@
       "description": "Whale wallet with $200k+ portfolio",
       "enabled": true,
       "notes": "Large wallet - monitoring for early token discoveries"
+    },
+    {
+      "address": "Ez2jp3rwXUbaTx7XwiHGaWVgTPFdzJoSg8TopqbxfaJN",
+      "name": "SOL Whale #3",
+      "description": "Whale wallet with $200k+ portfolio",
+      "enabled": true,
+      "notes": "Large wallet - monitoring for early token discoveries"
     }
   ],
   "ethereum": [],
